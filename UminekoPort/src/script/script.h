@@ -6,6 +6,7 @@
 
 #include "../engine/graphicscontext.h"
 #include "../util/binaryreader.h"
+#include "scriptdecompiler.h"
 
 struct ScriptHeader {
 	uint32_t fileSize;
@@ -20,6 +21,11 @@ struct SpriteEntry {
 struct CgEntry {
 	char name[0x18];
 	int16_t unknown;
+};
+
+enum class ImageType {
+	Picture = 2,
+	Sprite = 3
 };
 
 class Script {
@@ -37,7 +43,17 @@ public:
 	void stop() {
 		stopped_ = true;
 	}
+
+	int version() const {
+		return version_;
+	}
 private:
+	friend class ScriptDecompiler;
+
+	int version_ = 0;
+
+	ScriptDecompiler sd_;
+
 	std::atomic<bool> paused_;
 	std::atomic<bool> stopped_;
 	GraphicsContext &ctx_;
@@ -45,38 +61,119 @@ private:
 	std::vector<CgEntry> cgs_;
 	bool commandTest_;
 
+	uint32_t targetOffset_ = 0;
+	std::vector<uint32_t> callStack_;
+
+	std::map<int, int16_t> variables_;
+
 	typedef void (Script::*CommandFunction)(BinaryReader &, Archive &);
 	std::vector<CommandFunction> commands_;
 
 	void executeCommand(BinaryReader &br, Archive &archive);
 
+	int16_t getVariable(uint16_t value) {
+		if (value & 0x8000) {
+			return variables_[value & ~0x8000];
+		}
+		return (int16_t)value;
+	}
+
+	void setVariable(uint16_t variable, uint16_t value) {
+		if (variable & 0x8000 == 0) {
+			throw std::runtime_error("Not a variable: " + std::to_string(variable));
+		}
+		variables_[variable & ~0x8000] = value;
+	}
+
+	void jump(uint32_t offset) {
+		targetOffset_ = offset;
+	}
+
 	void command41(BinaryReader &br, Archive &archive) {
-		auto unk = br.read<uint8_t>();
-		auto test = unk & 0x80;
-		if (test == 0)
-			br.skip(4);
-		else
-			br.skip(6);
+		auto operation = br.read<uint8_t>();
+		auto variable = br.read<uint16_t>();
+		auto value = getVariable(br.read<uint16_t>());
+		if (operation & 0x80) {
+			// Two operands?
+			auto secondValue = br.read<uint16_t>();
+			return; // for now
+		}
+		switch (operation) {
+		case 0: // ???
+			break;
+		case 1: // set?
+			setVariable(variable, value);
+			break;
+		case 2: // add?
+			setVariable(variable, getVariable(variable) + value);
+			break;
+		default:
+			throw std::runtime_error("Unhandled operation.");
+		}
 	}
 	void command42(BinaryReader &br, Archive &archive) {
 		br.skip(14);
 	}
 	void command46(BinaryReader &br, Archive &archive) {
-		br.skip(5 + 4);
+		auto operation = br.read<uint8_t>();
+		auto value = getVariable(br.read<uint16_t>());
+		auto compareTo = getVariable(br.read<uint16_t>());
+		auto offset = br.read<uint32_t>();
+
+		switch (operation) {
+		case 0: // equal to (confirmed!)
+			if (value == compareTo) {
+				jump(offset);
+			}
+			break;
+		case 1: // Not equal to (confirmed!)
+			if (value != compareTo) {
+				jump(offset);
+			}
+			break;
+		case 2: // greater or equal (confirmed!)
+			if (value >= compareTo) {
+				jump(offset);
+			}
+			break;
+		case 5: // less than (confirmed!)
+			if (value < compareTo) {
+				jump(offset);
+			}
+			break;
+		}
 	}
 	void command47(BinaryReader &br, Archive &archive) {
-		br.skip(4);
+		auto offset = br.read<uint32_t>();
+		jump(offset);
 	}
 	void command48(BinaryReader &br, Archive &archive) {
-		br.skip(4);
+		auto offset = br.read<uint32_t>();
+		callStack_.push_back(br.tellg());
+		jump(offset);
 	}
 	void command49(BinaryReader &br, Archive &archive) {
-		// ???
+		if (callStack_.size() == 0) {
+			throw std::runtime_error("Cannot return without having called a function first.");
+		}
+		targetOffset_ = callStack_.back();
+		callStack_.pop_back();
 	}
+
+	// branch_on_variable
+	//  Checks the value of the first argument and jumps to the corresponding address in the argument list
 	void command4A(BinaryReader &br, Archive &archive) {
-		br.skip(2);
+		auto value = getVariable(br.read<uint16_t>());
 		auto count = br.read<uint16_t>();
-		br.skip(4 * count);
+		std::vector<uint32_t> offsets;
+		offsets.reserve(count);
+		for (int i = 0; i < count; ++i) {
+			offsets.push_back(br.read<uint32_t>());
+		}
+		if (value < 0 || value >= count)
+			throw std::runtime_error("Value out of range in branch_on_variable (is this an error?).");
+		else
+			jump(offsets[value]);
 	}
 	void command4D(BinaryReader &br, Archive &archive) {
 		br.skip(3);
@@ -106,7 +203,7 @@ private:
 		br.skip(4);
 		auto length = br.read<uint16_t>();
 		auto text = br.readString(length - 1);
-		std::cout << "86 Text: \"" << text << "\"\n";
+		//std::cout << "86 Text: \"" << text << "\"\n";
 		br.skip(1);
 		ctx_.pushMessage(text);
 		pause();
@@ -151,6 +248,9 @@ private:
 		}*/
 		auto unk2 = br.read<uint32_t>(); // B4 00 00 00 - Command Byte?
 	}
+	void command9D(BinaryReader &br, Archive &archive) {
+		br.skip(2);
+	}
 	void commandA0(BinaryReader &br, Archive &archive) {
 		br.skip(10);
 	}
@@ -158,7 +258,7 @@ private:
 		br.skip(4);
 	}
 	void commandA2(BinaryReader &br, Archive &archive) {
-		br.skip(5);
+		br.skip(2);
 	}
 	void commandA3(BinaryReader &br, Archive &archive) {
 		br.skip(6);
@@ -174,7 +274,7 @@ private:
 		auto length = br.read<uint8_t>();
 		auto text = br.readString(length - 1);
 		br.skip(1);
-		std::cout << "B0 Text: \"" << text << "\"\n";
+		//std::cout << "B0 Text: \"" << text << "\"\n";
 	}
 	void commandB1(BinaryReader &br, Archive &archive) {
 		br.skip(3);
@@ -209,6 +309,8 @@ private:
 			// ...
 		} else if (unk == 0x01) {
 			br.skip(2);
+		} else if (unk == 0x03) {
+			br.skip(4);
 		} else if (unk == 0x06) {
 			br.skip(4);
 		} else if (unk == 0x07) {

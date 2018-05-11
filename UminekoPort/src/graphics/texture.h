@@ -50,15 +50,19 @@ public:
 		resource_ = TextureCache::loadTxa(path, archive, tex);
 	}
 	void bind() {
-		glBindTexture(GL_TEXTURE_RECTANGLE, resource_->texture_);
+		glBindTexture(GL_TEXTURE_RECTANGLE, id());
 	}
 	void release() {
 		glBindTexture(GL_TEXTURE_RECTANGLE, 0);
 	}
 	GLuint id() const {
+		if (!resource_)
+			return 0;
 		return resource_->texture_;
 	}
 	const glm::ivec2 &size() const {
+		if (!resource_)
+			return glm::ivec2();
 		return resource_->size_;
 	}
 

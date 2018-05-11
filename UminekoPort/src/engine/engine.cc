@@ -11,9 +11,16 @@
 
 #include <thread>
 
+const std::string Engine::game = "umi";
+
 void Engine::run() {
 	Archive arc;
-	arc.open("data/DATA.ROM");
+	if (game == "umi")
+		arc.open("data/DATA.ROM");
+	else if (game == "chiru")
+		arc.open("chiru_data/DATA.ROM");
+	else if (game == "higu")
+		arc.open("higurashi_data/DATA.ROM");
 	//arc.explore();
 
 	Window window;
@@ -44,6 +51,9 @@ void Engine::run() {
 			if (event.type == WindowEvent::Type::KeyReleased) {
 				if (event.key == KeyCode::S) {
 					skipping = false;
+				}
+				if (event.key == KeyCode::X) {
+					arc.explore();
 				}
 			}
 			if (skipping) {

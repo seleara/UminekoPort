@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -64,9 +64,13 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="Umineko.props" />
+    <Import Project="UminekoDebug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="Umineko.props" />
+    <Import Project="UminekoRelease.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
@@ -89,14 +93,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;STB_IMAGE_IMPLEMENTATION;STB_IMAGE_WRITE_IMPLEMENTATION;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Projects\lib\glm-0.9.8.4\glm;C:\Projects\lib\glew-2.0.0\include;C:\Projects\lib\glfw-3.2.1.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <Link>
-      <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Projects\lib\glfw-3.2.1.bin.WIN64\lib-vc2015;C:\Projects\lib\glew-2.0.0\lib\Release\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Link>
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -131,27 +129,31 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Projects\lib\glfw-3.2.1.bin.WIN64\lib-vc2015;C:\Projects\lib\glew-2.0.0\lib\Release\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\data\archive.cc" />
     <ClCompile Include="src\engine\engine.cc" />
+    <ClCompile Include="src\graphics\mask.cc" />
     <ClCompile Include="src\graphics\shader.cc" />
     <ClCompile Include="src\graphics\spritebatch.cc" />
     <ClCompile Include="src\graphics\texture.cc" />
     <ClCompile Include="src\graphics\uniformbuffer.cc" />
     <ClCompile Include="src\main.cc" />
     <ClCompile Include="src\script\script.cc" />
+    <ClCompile Include="src\script\scriptdecompiler.cc" />
     <ClCompile Include="src\util\string.cc" />
     <ClCompile Include="src\window\window.cc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\audio\atrac3.h" />
+    <ClInclude Include="src\audio\audio.h" />
     <ClInclude Include="src\data\archive.h" />
     <ClInclude Include="src\data\vertexbuffer.h" />
     <ClInclude Include="src\engine\engine.h" />
     <ClInclude Include="src\engine\graphicscontext.h" />
     <ClInclude Include="src\graphics\gluniformbuffer.h" />
+    <ClInclude Include="src\graphics\mask.h" />
     <ClInclude Include="src\graphics\shader.h" />
     <ClInclude Include="src\graphics\sprite.h" />
     <ClInclude Include="src\graphics\spritebatch.h" />
@@ -159,6 +161,7 @@
     <ClInclude Include="src\graphics\uniformbuffer.h" />
     <ClInclude Include="src\math\transform.h" />
     <ClInclude Include="src\script\script.h" />
+    <ClInclude Include="src\script\scriptdecompiler.h" />
     <ClInclude Include="src\stb\stb_image.h" />
     <ClInclude Include="src\stb\stb_image_write.h" />
     <ClInclude Include="src\util\binaryreader.h" />

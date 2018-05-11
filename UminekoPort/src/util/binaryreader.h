@@ -41,6 +41,8 @@ protected:
 
 class BinaryReader {
 public:
+	BinaryReader() : ownsStream_(false), is_(nullptr) {}
+
 	explicit BinaryReader(std::istream &is) : ownsStream_(false), is_(&is) {
 	}
 
@@ -55,6 +57,13 @@ public:
 		if (ownsStream_) {
 			delete is_;
 		}
+	}
+
+	void wrap(const char *data, size_t size) {
+		ownsStream_ = true;
+		memoryBuffer_ = std::make_unique<MemoryBuffer>(data, size);
+		is_ = new std::istream(memoryBuffer_.get(), std::ios_base::binary);
+		is_->rdbuf(memoryBuffer_.get());
 	}
 
 	// Stream redirect functions

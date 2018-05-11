@@ -297,8 +297,8 @@ void Archive::extractTxa(ArchiveEntry &txa) {
 		auto name = br.readString();
 		br.seekg(chunkStart + chunk.length);
 		std::cout << "W = " << chunk.width << ", H = " << chunk.height << "\n";
-		chunks.push_back(chunk);
-		names.push_back(name);
+		chunks.push_back(std::move(chunk));
+		names.push_back(std::move(name));
 	}
 
 	unsigned char *data = new unsigned char[header.decodedSize];
@@ -307,11 +307,13 @@ void Archive::extractTxa(ArchiveEntry &txa) {
 	br.read((char *)buffer, header.encodedSize);
 	decode(buffer, header.encodedSize, data);
 
+	std::stringstream bmpName;
 	for (int i = 0; i < header.chunks; ++i) {
-		std::stringstream bmpName;
 		bmpName << txa.name << "_" << names[i] << ".png";
 		std::cout << "PNG: " << bmpName.str() << "\n";
 		writeImage(bmpName.str(), data + chunks[i].offset, chunks[i].width, chunks[i].height, chunks[i].scanline);
+		bmpName.clear();
+		bmpName.str("");
 	}
 
 	delete[] data;
@@ -405,8 +407,7 @@ Txa Archive::getTxa(const std::string &path) {
 		//bmpName << txa.name << "_" << names[i] << ".png";
 		//std::cout << "PNG: " << bmpName.str() << "\n";
 		//writeImage(bmpName.str(), data + chunks[i].offset, chunks[i].width, chunks[i].height, chunks[i].scanline);
-		txa.subentries.emplace_back();
-		auto &subEntry = txa.subentries.back();
+		auto &subEntry = txa.subentries.emplace_back();
 		subEntry.name = names[i];
 		subEntry.width = chunks[i].width;
 		subEntry.height = chunks[i].height;
@@ -581,10 +582,10 @@ void Archive::scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br
 	br.seekg(startOffset);
 	auto count = br.read<uint32_t>();
 	std::vector<ArchiveChunk> chunks(count);
-	br.read((char *)&chunks[0], count * sizeof(ArchiveChunk));
+	br.read((char *)chunks.data(), count * sizeof(ArchiveChunk));
 
 	current.children.reserve(count);
-	for (int i = 0; i < count; ++i) {
+	for (uint32_t i = 0; i < count; ++i) {
 		auto &chunk = chunks[i];
 		int isFolder = chunk.nameOffset & 0x80000000;
 		chunk.nameOffset &= ~0x80000000;
@@ -599,20 +600,18 @@ void Archive::scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br
 
 		if (isFolder) {
 			std::cout << "Reading folder '" << name << "' (parent = '" << current.name << "')...\n";
-			current.children.emplace_back();
-			auto &entry = current.children.back();
+			auto &entry = current.children.emplace_back();
 			entry.parent = &current;
 			entry.isFolder = true;
-			entry.name = name;
+			entry.name = std::move(name);
 			current.childrenNames.insert({ entry.name, current.children.size() - 1 });
 			scan(offset, entry, br);
 		} else {
-			current.children.emplace_back();
-			auto &entry = current.children.back();
+			auto &entry = current.children.emplace_back();
 			entry.parent = &current;
 			entry.offset = offset;
 			entry.size = chunk.size;
-			entry.name = name;
+			entry.name = std::move(name);
 			current.childrenNames.insert({ entry.name, current.children.size() - 1 });
 		}
 	}
