@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 
+#include "../engine/engine.h"
 #include "../util/binaryreader.h"
 
 #include "scriptdecompiler.h"
@@ -20,6 +21,7 @@ Script::Script(GraphicsContext &ctx, bool commandTest) : ctx_(ctx), commandTest_
 	commands_[0x4E] = &Script::command4E;
 	commands_[0x80] = &Script::command80;
 	commands_[0x83] = &Script::command83;
+	commands_[0x85] = &Script::command85;
 	commands_[0x86] = &Script::command86;
 	commands_[0x87] = &Script::command87;
 	commands_[0x88] = &Script::command88;
@@ -28,7 +30,10 @@ Script::Script(GraphicsContext &ctx, bool commandTest) : ctx_(ctx), commandTest_
 	commands_[0x8D] = &Script::command8D;
 	commands_[0x9C] = &Script::command9C;
 	commands_[0x9D] = &Script::command9D;
-	commands_[0xA0] = &Script::commandA0;
+	if (Engine::game == "umi" || Engine::game == "chiru")
+		commands_[0xA0] = &Script::commandA0_umi;
+	else
+		commands_[0xA0] = &Script::commandA0_higu;
 	commands_[0xA1] = &Script::commandA1;
 	commands_[0xA2] = &Script::commandA2;
 	commands_[0xA3] = &Script::commandA3;
@@ -97,10 +102,16 @@ void Script::load(const std::string &path, Archive &archive) {
 	cgs_.resize(cgCount);
 	br.read((char *)cgs_.data(), cgCount * sizeof(CgEntry));
 
+	br.seekg(animeOffset);
+	auto animCount = br.read<uint32_t>();
+	anims_.resize(cgCount);
+	br.read((char *)anims_.data(), animCount * sizeof(AnimEntry));
+
 	/*for (const auto &s : sprites_) {
 		std::cout << s.name << "\n";
 	}*/
 
+	sd_.setup();
 	sd_.decompile(path, data, scriptOffset);
 
 	br.seekg(scriptOffset);

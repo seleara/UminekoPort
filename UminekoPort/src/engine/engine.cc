@@ -5,6 +5,7 @@
 #include "../window/window.h"
 #include "../graphics/shader.h"
 #include "../graphics/uniformbuffer.h"
+#include "../math/time.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -73,6 +74,33 @@ void Engine::run() {
 					}
 				}
 			}
+		}
+
+		frameTime = clock.reset();
+		if (frameTime > 0.25)
+			frameTime = 0.25;
+		Time::totalTime_ += frameTime;
+		Time::deltaTime_ = frameTime;
+		accumulator += frameTime;
+
+		fpsUpdateFreq += frameTime;
+		if (fpsUpdateFreq >= 0.5) {
+			double fps = 1.0 / frameTime;
+			//std::stringstream ss;
+			//ss << this->game << " - FPS: " << fps << " (frame time " << frameTime << ")";
+			//window.setTitle(ss.str());
+			fpsUpdateFreq = 0;
+		}
+
+		while (accumulator >= dt) {
+			accumulator -= dt;
+
+			// fixed update
+		}
+		ctx.update();
+		if (ctx.waitingDone()) {
+			script.resume();
+			ctx.stopWait();
 		}
 
 		window.clear(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));

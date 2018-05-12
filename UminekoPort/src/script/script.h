@@ -23,6 +23,11 @@ struct CgEntry {
 	int16_t unknown;
 };
 
+struct AnimEntry {
+	char name[0x20];
+	int16_t unknown;
+};
+
 enum class ImageType {
 	Picture = 2,
 	Sprite = 3
@@ -59,10 +64,12 @@ private:
 	GraphicsContext &ctx_;
 	std::vector<SpriteEntry> sprites_;
 	std::vector<CgEntry> cgs_;
+	std::vector<AnimEntry> anims_;
 	bool commandTest_;
 
 	uint32_t targetOffset_ = 0;
 	std::vector<uint32_t> callStack_;
+	std::vector<uint16_t> varStack_; // separate from callstack?
 
 	std::map<int, int16_t> variables_;
 
@@ -79,7 +86,7 @@ private:
 	}
 
 	void setVariable(uint16_t variable, uint16_t value) {
-		if (variable & 0x8000 == 0) {
+		if ((variable & 0x8000) == 0) {
 			throw std::runtime_error("Not a variable: " + std::to_string(variable));
 		}
 		variables_[variable & ~0x8000] = value;
@@ -89,23 +96,58 @@ private:
 		targetOffset_ = offset;
 	}
 
+	std::string readString8(BinaryReader &br) {
+		auto strSize = br.read<uint8_t>();
+		auto str = br.readString(strSize - 1);
+		br.skip(1);
+		return str;
+	}
+
+	std::string readString16(BinaryReader &br) {
+		auto strSize = br.read<uint16_t>();
+		auto str = br.readString(strSize - 1);
+		br.skip(1);
+		return str;
+	}
+
+	// set_variable
+	//  Perform arithmetic operations and store the result in the specified variable
+	//  op=, ???, op+=, op-=, op*=, op/=
 	void command41(BinaryReader &br, Archive &archive) {
 		auto operation = br.read<uint8_t>();
 		auto variable = br.read<uint16_t>();
 		auto value = getVariable(br.read<uint16_t>());
+		int16_t op1, op2;
 		if (operation & 0x80) {
-			// Two operands?
-			auto secondValue = br.read<uint16_t>();
+			// Two operands (confirmed?)
+			auto secondValue = getVariable(br.read<uint16_t>());
+			op1 = value;
+			op2 = secondValue;
 			return; // for now
+		} else {
+			op1 = getVariable(variable);
+			op2 = value;
 		}
 		switch (operation) {
-		case 0: // ???
-			break;
-		case 1: // set?
+		case 0: // set (confirmed?)
+			if (operation & 0x80) throw std::runtime_error("Cannot set with 2 operands (I think?)");
 			setVariable(variable, value);
 			break;
-		case 2: // add?
-			setVariable(variable, getVariable(variable) + value);
+		case 1: // same as 0? appears to be set
+			if (operation & 0x80) throw std::runtime_error("Cannot set(?) with 2 operands (I think?)");
+			setVariable(variable, value); // ???
+			break;
+		case 2: // add (confirmed?)
+			setVariable(variable, op1 + op2);
+			break;
+		case 3: // subtract (confirmed?)
+			setVariable(variable, op1 - op2);
+			break;
+		case 4: // multiply (confirmed?)
+			setVariable(variable, op1 * op2);
+			break;
+		case 5: // divide (confirmed?)
+			setVariable(variable, op1 / op2);
 			break;
 		default:
 			throw std::runtime_error("Unhandled operation.");
@@ -131,8 +173,18 @@ private:
 				jump(offset);
 			}
 			break;
-		case 2: // greater or equal (confirmed!)
+		case 2: // greater than or equal to (confirmed!)
 			if (value >= compareTo) {
+				jump(offset);
+			}
+			break;
+		case 3: // greater than (confirmed!)
+			if (value > compareTo) {
+				jump(offset);
+			}
+			break;
+		case 4: // less than or equal to (confirmed!)
+			if (value <= compareTo) {
 				jump(offset);
 			}
 			break;
@@ -141,6 +193,8 @@ private:
 				jump(offset);
 			}
 			break;
+		default:
+			throw std::runtime_error("Unsupported jump_if operation: " + std::to_string(operation));
 		}
 	}
 	void command47(BinaryReader &br, Archive &archive) {
@@ -176,16 +230,23 @@ private:
 			jump(offsets[value]);
 	}
 	void command4D(BinaryReader &br, Archive &archive) {
-		br.skip(3);
+		auto count = br.read<uint8_t>();
+		for (int i = 0; i < count; ++i) {
+			varStack_.push_back(getVariable(br.read<uint16_t>()));
+		}
 	}
 	void command4E(BinaryReader &br, Archive &archive) {
-		auto unk = br.read<uint8_t>();
-		if (unk == 1)
-			br.skip(2);
-		else if (unk == 4)
-			br.skip(3);
-		else
-			br.skip(0);
+		auto count = br.read<uint8_t>();
+		// Think this pop order is correct
+		for (int i = 0; i < count; ++i) {
+			if (varStack_.size() == 0)
+				throw std::out_of_range("Cannot pop from empty stack.");
+			auto var = br.read<uint16_t>();
+			if ((var & 0x8000) == 0)
+				throw std::runtime_error("Cannot pop into a non-variable argument.");
+			setVariable(var, varStack_.back());
+			varStack_.pop_back();
+		}
 	}
 	void command80(BinaryReader &br, Archive &archive) {
 		br.skip(3);
@@ -193,18 +254,16 @@ private:
 		br.skip(2 * count); // ???
 	}
 	void command83(BinaryReader &br, Archive &archive) {
-		//br.skip(2);
-		auto unk1 = br.read<uint8_t>();
-		auto unk2 = br.read<uint8_t>();
-		if (unk2 != 0x00)
-			br.skip(0);
+		auto frames = br.read<uint16_t>();
+		ctx_.wait(frames);
+		pause();
+	}
+	void command85(BinaryReader &br, Archive &archive) {
+		br.skip(4);
 	}
 	void command86(BinaryReader &br, Archive &archive) {
 		br.skip(4);
-		auto length = br.read<uint16_t>();
-		auto text = br.readString(length - 1);
-		//std::cout << "86 Text: \"" << text << "\"\n";
-		br.skip(1);
+		auto text = readString16(br);
 		ctx_.pushMessage(text);
 		pause();
 	}
@@ -214,17 +273,13 @@ private:
 	void command88(BinaryReader &br, Archive &archive) {
 	}
 	void command89(BinaryReader &br, Archive &archive) {
-		//br.skip(3);
+		ctx_.hideMessage();
 	}
 	void command8C(BinaryReader &br, Archive &archive) {
 		br.skip(5);
 		br.skip(3); // ???
-		auto headerSize = br.read<uint8_t>();
-		auto header = br.readString(headerSize - 1);
-		br.skip(1);
-		auto contentSize = br.read<uint8_t>();
-		auto content = br.readString(contentSize - 1);
-		br.skip(1);
+		auto header = readString8(br);
+		auto content = readString8(br);
 	}
 	void command8D(BinaryReader &br, Archive &archive) {
 		auto next = br.read<uint8_t>();
@@ -251,8 +306,12 @@ private:
 	void command9D(BinaryReader &br, Archive &archive) {
 		br.skip(2);
 	}
-	void commandA0(BinaryReader &br, Archive &archive) {
+	void commandA0_umi(BinaryReader &br, Archive &archive) {
 		br.skip(10);
+	}
+	void commandA0_higu(BinaryReader &br, Archive &archive) {
+		// same as umi B0?
+		commandB0(br, archive);
 	}
 	void commandA1(BinaryReader &br, Archive &archive) {
 		br.skip(4);
@@ -270,11 +329,9 @@ private:
 		br.skip(7); // ???
 	}
 	void commandB0(BinaryReader &br, Archive &archive) {
-		br.skip(2);
-		auto length = br.read<uint8_t>();
-		auto text = br.readString(length - 1);
-		br.skip(1);
-		//std::cout << "B0 Text: \"" << text << "\"\n";
+		auto unk = br.read<uint16_t>();
+		auto str = readString8(br);
+		// ???
 	}
 	void commandB1(BinaryReader &br, Archive &archive) {
 		br.skip(3);

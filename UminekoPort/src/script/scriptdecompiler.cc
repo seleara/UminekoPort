@@ -15,11 +15,11 @@ std::vector<std::string> ScriptDecompiler::functionNames_ = {
 	"command_10", "command_11", "command_12", "command_13", "command_14", "command_15", "command_16", "command_17", "command_18", "command_19", "command_1A", "command_1B", "command_1C", "command_1D", "command_1E", "command_1F",
 	"command_20", "command_21", "command_22", "command_23", "command_24", "command_25", "command_26", "command_27", "command_28", "command_29", "command_2A", "command_2B", "command_2C", "command_2D", "command_2E", "command_2F",
 	"command_30", "command_31", "command_32", "command_33", "command_34", "command_35", "command_36", "command_37", "command_38", "command_39", "command_3A", "command_3B", "command_3C", "command_3D", "command_3E", "command_3F",
-	"command_40", "command_41", "command_42", "command_43", "command_44", "command_45", "jump_if", "jump", "call", "return", "branch_on_variable", "command_4B", "command_4C", "command_4D", "command_4E", "command_4F",
+	"command_40", "set_variable", "command_42", "command_43", "command_44", "command_45", "jump_if", "jump", "call", "return", "branch_on_variable", "command_4B", "command_4C", "push", "pop", "command_4F",
 	"command_50", "command_51", "command_52", "command_53", "command_54", "command_55", "command_56", "command_57", "command_58", "command_59", "command_5A", "command_5B", "command_5C", "command_5D", "command_5E", "command_5F",
 	"command_60", "command_61", "command_62", "command_63", "command_64", "command_65", "command_66", "command_67", "command_68", "command_69", "command_6A", "command_6B", "command_6C", "command_6D", "command_6E", "command_6F",
 	"command_70", "command_71", "command_72", "command_73", "command_74", "command_75", "command_76", "command_77", "command_78", "command_79", "command_7A", "command_7B", "command_7C", "command_7D", "command_7E", "command_7F",
-	"command_80", "command_81", "command_82", "command_83", "command_84", "command_85", "display_text", "command_87", "command_88", "command_89", "command_8A", "command_8B", "show_choices", "command_8D", "command_8E", "command_8F",
+	"command_80", "command_81", "command_82", "wait", "command_84", "command_85", "display_text", "command_87", "command_88", "hide_text", "command_8A", "command_8B", "show_choices", "command_8D", "command_8E", "command_8F",
 	"command_90", "command_91", "command_92", "command_93", "command_94", "command_95", "command_96", "command_97", "command_98", "command_99", "command_9A", "command_9B", "command_9C", "command_9D", "command_9E", "command_9F",
 	"command_A0", "command_A1", "command_A2", "command_A3", "command_A4", "command_A5", "command_A6", "command_A7", "command_A8", "command_A9", "command_AA", "command_AB", "command_AC", "command_AD", "command_AE", "command_AF",
 	"command_B0", "command_B1", "command_B2", "command_B3", "command_B4", "command_B5", "command_B6", "command_B7", "command_B8", "command_B9", "command_BA", "command_BB", "command_BC", "command_BD", "command_BE", "command_BF",
@@ -32,7 +32,6 @@ std::vector<std::string> ScriptDecompiler::functionNames_ = {
 std::vector<SDCommand> ScriptDecompiler::commands_;
 
 ScriptDecompiler::ScriptDecompiler(Script &script) : script_(script) {
-	setup();
 }
 
 void ScriptDecompiler::setup() {
@@ -44,15 +43,17 @@ void ScriptDecompiler::setup() {
 	commands_[0x40] = { 0x40, { arg(SDType::Bytes, 3) } }; // ???
 	commands_[0x41] = { 0x41, {} }; // special case
 	commands_[0x42] = { 0x42, { arg(SDType::UInt16), arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::Bytes, 2) } };
-	commands_[0x46] = { 0x46, { arg(SDType::UInt8), arg(SDType::UInt16), arg(SDType::Int16), arg(SDType::JumpAddr) } };
+	commands_[0x43] = { 0x43, { arg(SDType::UInt8), arg(SDType::UInt16), arg(SDType::Int16) } };
+	commands_[0x46] = { 0x46, { arg(SDType::UInt8), arg(SDType::UInt16), arg(SDType::Int16), arg(SDType::JumpAddr) } }; // special case
 	commands_[0x47] = { 0x47, { arg(SDType::JumpAddr) } };
 	commands_[0x48] = { 0x48, { arg(SDType::JumpAddr) } };
 	commands_[0x49] = { 0x49, {} };
 	commands_[0x4A] = { 0x4A, {} }; // special case
-	commands_[0x4D] = { 0x4D, { arg(SDType::UInt8), arg(SDType::Int16) } };
-	commands_[0x4E] = { 0x4E, {} }; // special case
+	commands_[0x4D] = { 0x4D, {/* count, count * u16 */} }; // special case
+	commands_[0x4E] = { 0x4E, {/* count, count * u16 */} }; // special case
 	commands_[0x64] = { 0x64, { arg(SDType::Bytes, 1) } }; // ???
-	commands_[0x80] = { 0x80, {} }; // special case
+	commands_[0x80] = { 0x80, { arg(SDType::Bytes, 2) } }; // special case
+	commands_[0x81] = { 0x81, { arg(SDType::UInt16), arg(SDType::Int16) } };
 	commands_[0x82] = { 0x82, { arg(SDType::UInt16) } };
 	commands_[0x83] = { 0x83, { arg(SDType::Bytes, 2) } }; // special case
 	commands_[0x85] = { 0x85, { arg(SDType::Bytes, 4) } };
@@ -62,15 +63,23 @@ void ScriptDecompiler::setup() {
 	commands_[0x89] = { 0x89, {} };
 	commands_[0x8C] = { 0x8C, { arg(SDType::Bytes, 4), arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::String8), arg(SDType::String8) } };
 	commands_[0x8D] = { 0x8D, {} }; // special case?
-	commands_[0x8E] = { 0x8E, {} };
+	if (script_.version() == 0x01)
+		commands_[0x8E] = { 0x8E, {} };
+	else
+		commands_[0x8E] = { 0x8E, { arg(SDType::Bytes, 1) } };
+	commands_[0x91] = { 0x91, { arg(SDType::Bytes, 2) } };
+	commands_[0x97] = { 0x97, { arg(SDType::Bytes, 2) } };
 	commands_[0x9C] = { 0x9C, { arg(SDType::UInt32), arg(SDType::UInt32) } };
 	commands_[0x9D] = { 0x9D, { arg(SDType::Bytes, 2) } };
+	commands_[0x9E] = { 0x9E, { arg(SDType::Bytes, 4) } };
 	commands_[0xA0] = { 0xA0, { arg(SDType::Bytes, 10) } }; // special case?
 	commands_[0xA1] = { 0xA1, { arg(SDType::Bytes, 4) } };
 	commands_[0xA2] = { 0xA2, { arg(SDType::Bytes, 2) } };
 	commands_[0xA3] = { 0xA3, { arg(SDType::Bytes, 6) } };
 	commands_[0xA4] = { 0xA4, { arg(SDType::Bytes, 7) } };
 	commands_[0xA6] = { 0xA6, { arg(SDType::Bytes, 4) } };
+	commands_[0xAE] = { 0xAE, { arg(SDType::Bytes, 2) } };
+	commands_[0xAF] = { 0xAF, { arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::Bytes, 2) } };
 	commands_[0xB0] = { 0xB0, { arg(SDType::Bytes, 2), arg(SDType::String8) } };
 	commands_[0xB1] = { 0xB1, { arg(SDType::Bytes, 3) } };
 	commands_[0xB3] = { 0xB3, {} };
@@ -80,6 +89,7 @@ void ScriptDecompiler::setup() {
 	commands_[0xBD] = { 0xB3, { arg(SDType::Bytes, 3) } };
 	commands_[0xBE] = { 0xBE, { arg(SDType::Bytes, 2) } };
 	commands_[0xBF] = { 0xBF, { arg(SDType::Bytes, 4) } };
+	commands_[0xC0] = { 0xC0, {} };
 	commands_[0xC1] = { 0xC1, { arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::UInt8) } }; // special case
 	commands_[0xC2] = { 0xC2, {} }; // special case
 	commands_[0xC3] = { 0xC3, { arg(SDType::Bytes, 4) } };
@@ -87,6 +97,7 @@ void ScriptDecompiler::setup() {
 	commands_[0xC5] = { 0xC5, { arg(SDType::Bytes, 2) } };
 	commands_[0xC6] = { 0xC6, {} };
 	commands_[0xC7] = { 0xC7, { arg(SDType::Bytes, 5) } };
+	commands_[0xC8] = { 0xC8, { arg(SDType::UInt16) } };
 	commands_[0xC9] = { 0xC9, {} };
 	commands_[0xCA] = { 0xCA, {} }; // special case
 	commands_[0xCB] = { 0xCB, { arg(SDType::Bytes, 2) } };
@@ -94,15 +105,21 @@ void ScriptDecompiler::setup() {
 
 	specialCases_.resize(0x100, nullptr);
 	specialCases_[0x41] = &ScriptDecompiler::command_41;
+	specialCases_[0x46] = &ScriptDecompiler::command_46;
 	specialCases_[0x4A] = &ScriptDecompiler::command_4A;
+	specialCases_[0x4D] = &ScriptDecompiler::command_4D;
 	specialCases_[0x4E] = &ScriptDecompiler::command_4E;
-	specialCases_[0x80] = &ScriptDecompiler::command_80;
+	if (script_.version() != 0x01)
+		specialCases_[0x80] = &ScriptDecompiler::command_80_higu;
+	//else
+	//	specialCases_[0x80] = &ScriptDecompiler::command_80;
 	specialCases_[0x83] = &ScriptDecompiler::command_83;
 	specialCases_[0x8D] = &ScriptDecompiler::command_8D;
 	specialCases_[0xA0] = &ScriptDecompiler::command_A0;
 	specialCases_[0xB9] = &ScriptDecompiler::command_B9;
 	specialCases_[0xC1] = &ScriptDecompiler::display_image;
 	specialCases_[0xC2] = &ScriptDecompiler::command_C2;
+	specialCases_[0xC7] = &ScriptDecompiler::command_C7;
 	specialCases_[0xCA] = &ScriptDecompiler::command_CA;
 }
 
@@ -117,7 +134,7 @@ void ScriptDecompiler::decompile(const std::string &path, const std::vector<unsi
 	std::map<uint32_t, std::string> lines;
 	
 	while (br.tellg() < data.size()) {
-		auto offset = br.tellg();
+		uint32_t offset = br.tellg();
 		auto opcode = br.read<uint8_t>();
 		const auto &cmd = commands_[opcode];
 		FuncInfo funcInfo;
@@ -218,7 +235,7 @@ std::string ScriptDecompiler::parseArgument(const SDArgument &arg, BinaryReader 
 	std::stringstream ss;
 	switch (arg.type) {
 	case SDType::Bytes:
-		for (int i = 0; i < arg.count; ++i) {
+		for (uint32_t i = 0; i < arg.count; ++i) {
 			auto b = br.read<uint8_t>();
 			ss << std::hex << std::setw(2) << std::setfill('0') << (int)b << (i < arg.count - 1 ? " " : "");
 		}
@@ -293,15 +310,85 @@ std::string ScriptDecompiler::parseArgument(const SDArgument &arg, BinaryReader 
 FuncInfo ScriptDecompiler::command_41(const SDCommand &cmd, BinaryReader &br) const {
 	FuncInfo fi;
 	std::stringstream ss;
-	auto unk = br.read<uint8_t>();
-	ss << getName(cmd.opcode) << "(" << (int)unk << ", ";
-	auto test = unk & 0x80;
-	if (test == 0) {
-		ss << parseArgument(arg(SDType::UInt16), br) << ", ";
-		ss << parseArgument(arg(SDType::Int16), br) << ")";
-	} else {
-		ss << parseArgument(arg(SDType::Bytes, 6), br) << ")";
+	auto op = br.read<uint8_t>();
+	switch (op & ~0x80) {
+	case 0:
+		ss << "set_variable";
+		break;
+	case 1:
+		ss << "set_variable_maybe";
+		break;
+	case 2:
+		ss << "add_variable";
+		break;
+	case 3:
+		ss << "sub_variable";
+		break;
+	case 4:
+		ss << "mul_variable";
+		break;
+	case 5:
+		ss << "div_variable";
+		break;
+	default:
+		ss << getName(cmd.opcode);
 	}
+	ss << "("; // << (int)op << ", ";
+	auto test = op & 0x80;
+	ss << parseArgument(arg(SDType::UInt16), br) << ", ";
+	ss << parseArgument(arg(SDType::Int16), br);
+	if (test == 0) {
+	} else {
+		ss << ", " << parseArgument(arg(SDType::Int16), br);
+	}
+	ss << ")";
+	fi.line = ss.str();
+	return fi;
+}
+
+FuncInfo ScriptDecompiler::command_46(const SDCommand &cmd, BinaryReader &br) const {
+	FuncInfo fi;
+	std::stringstream ss;
+	auto op = br.read<uint8_t>();
+	bool unknown = false;
+	switch (op & ~0x80) {
+	case 0:
+		ss << "jump_if_eq";
+		break;
+	case 1:
+		ss << "jump_if_neq";
+		break;
+	case 2:
+		ss << "jump_if_gteq";
+		break;
+	case 3:
+		ss << "jump_if_gt";
+		break;
+	case 4:
+		ss << "jump_if_lteq";
+		break;
+	case 5:
+		ss << "jump_if_lt";
+		break;
+	default:
+		ss << getName(cmd.opcode);
+		unknown = true;
+		break;
+	}
+	auto test = op & 0x80;
+	if (test)
+		ss << "_80";
+	ss << "(";
+	if (unknown) {
+		ss << std::hex << std::setw(2) << std::setfill('0') << (int)op << std::dec << ", ";
+	}
+	ss << parseArgument(arg(SDType::UInt16), br) << ", ";
+	ss << parseArgument(arg(SDType::Int16), br) << ", ";
+	auto offset = br.read<uint32_t>();
+	br.skip(-4);
+	ss << parseArgument(arg(SDType::JumpAddr), br);
+	fi.jumps.push_back(offset);
+	ss << ")";
 	fi.line = ss.str();
 	return fi;
 }
@@ -320,17 +407,28 @@ FuncInfo ScriptDecompiler::command_4A(const SDCommand &cmd, BinaryReader &br) co
 	return fi;
 }
 
+FuncInfo ScriptDecompiler::command_4D(const SDCommand &cmd, BinaryReader &br) const {
+	FuncInfo fi;
+	std::stringstream ss;
+	auto count = br.read<uint8_t>();
+	ss << getName(cmd.opcode) << "(" << (int)count;
+	for (int i = 0; i < count; ++i) {
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	}
+	ss << ")";
+	fi.line = ss.str();
+	return fi;
+}
+
 FuncInfo ScriptDecompiler::command_4E(const SDCommand &cmd, BinaryReader &br) const {
 	FuncInfo fi;
 	std::stringstream ss;
-	auto unk = br.read<uint8_t>();
-	ss << getName(cmd.opcode) << "(" << (int)unk;
-	if (unk == 1)
-		ss << ", " << parseArgument(arg(SDType::UInt16), br) << ")";
-	else if (unk == 4)
-		ss << ", " << parseArgument(arg(SDType::Bytes, 3), br) << ")";
-	else
-		ss << ")";
+	auto count = br.read<uint8_t>();
+	ss << getName(cmd.opcode) << "(" << (int)count;
+	for (int i = 0; i < count; ++i) {
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	}
+	ss << ")";
 	fi.line = ss.str();
 	return fi;
 }
@@ -351,18 +449,35 @@ FuncInfo ScriptDecompiler::command_80(const SDCommand &cmd, BinaryReader &br) co
 	return fi;
 }
 
+FuncInfo ScriptDecompiler::command_80_higu(const SDCommand &cmd, BinaryReader &br) const {
+	FuncInfo fi;
+	std::stringstream ss;
+	ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 2), br) << ", ";
+	auto unk = br.read<uint8_t>();
+	ss << (int)unk;
+	if (unk & 0x80) {
+		ss << ", " << parseArgument(arg(SDType::Bytes, 4), br);
+	} else {
+		ss << ", " << parseArgument(arg(SDType::Bytes, 5), br);
+	}
+	ss << ")";
+
+	fi.line = ss.str();
+	return fi;
+}
+
 FuncInfo ScriptDecompiler::command_83(const SDCommand &cmd, BinaryReader &br) const {
 	FuncInfo fi;
 	std::stringstream ss;
 	auto unk = br.read<uint16_t>();
 	br.skip(-2);
 	ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::UInt16), br);
-	if (unk == 3 || unk == 4)
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
-	else if (unk == 6) {
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
-	}
+	//if (unk == 3 || unk == 4 || unk == 6 || unk == 7 || unk == 8)
+	//	ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	//else if (unk == 6) {
+	//	ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	//	ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	//}
 	//ss << parseArgument(arg(SDType::UInt16), br);
 	//count &= ~0x80;
 	/*if (unk & 0x8000)
@@ -378,16 +493,20 @@ FuncInfo ScriptDecompiler::command_83(const SDCommand &cmd, BinaryReader &br) co
 FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) const {
 	FuncInfo fi;
 	auto next = br.read<uint8_t>();
+	br.skip(-1);
 	std::stringstream ss;
-	ss << getName(cmd.opcode) << "(" << (int)next << ", ";
+	ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br) << ", ";
 	next &= ~0x80;
 	if (next == 0x02)
 		ss << parseArgument(arg(SDType::UInt16), br) << ")";
 	else if (next == 0x03) {
 		ss << parseArgument(arg(SDType::UInt16), br);
 		ss << ", " << parseArgument(arg(SDType::UInt16), br) << ")";
-	} else if (next == 0x0E)
-		ss << parseArgument(arg(SDType::Bytes, 6), br) << ")";
+	} else if (next == 0x0E) {
+		ss << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br) << ")";
+	}
 	fi.line = ss.str();
 	return fi;
 }
@@ -396,14 +515,12 @@ FuncInfo ScriptDecompiler::command_A0(const SDCommand &cmd, BinaryReader &br) co
 	FuncInfo fi;
 	std::stringstream ss;
 	auto first = br.read<uint16_t>();
-	ss << getName(cmd.opcode) << "(" << first << ", ";
-	auto count = br.read<uint8_t>();
-	ss << (int)count;
+	ss << getName(cmd.opcode) << "(" << first;
 	if (script_.version() != 1) {
-		for (int i = 0; i < count; ++i) {
-			ss << ", " << parseArgument(arg(SDType::Bytes, 1), br);
-		}
+		ss << ", " << parseArgument(arg(SDType::String8), br);
 	} else {
+		auto count = br.read<uint8_t>();
+		ss << ", " << (int)count;
 		ss << ", " << parseArgument(arg(SDType::Bytes, 7), br);
 	}
 	ss << ")";
@@ -449,18 +566,28 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 	}
 
 	if (unk3 == 0x2D) {
-		ss << ", " << parseArgument(arg(SDType::Bytes, 8), br);
-	}
-	if (unk3 == 1) {
+		ss << ", " << parseArgument(arg(SDType::Bytes, 8), br) << ") // ???";
+	} else if (type != 0 && unk3 != 0) { // unk3 == 1
 		spriteId = br.read<uint16_t>();
 		if (type == 3) {
 			ss << ", \"bustup/" << std::string(script_.sprites_[spriteId].name) << ".bup\", \"" << std::string(script_.sprites_[spriteId].pose) << "\"";
+			ss << ") // spriteId = " << spriteId;
 		} else if (type == 2) {
 			ss << ", \"picture/" << std::string(script_.cgs_[spriteId].name) << ".pic\"";
+			ss << ") // cgId = " << spriteId;
+		} else if (type == 4) {
+			// anim?
+			ss << ", \"anime/" << std::string(script_.anims_[spriteId].name) << ".???\"";
+			auto animUnknown = br.read<uint16_t>();
+			ss << ", " << animUnknown << ") // animId = " << spriteId;
+		} else if (type == 1) {
+			ss << ", " << spriteId;
+			ss << ", " << parseArgument(arg(SDType::UInt16), br);
+			ss << ", " << parseArgument(arg(SDType::UInt16), br);
+			ss << ")";
 		} else {
-			ss << ", UNKNOWN";
+			ss << ", UNKNOWN)";
 		}
-		ss << ") // spriteId = " << spriteId;
 	} else {
 		ss << "UNKNOWN)";
 	}
@@ -481,11 +608,30 @@ FuncInfo ScriptDecompiler::command_C2(const SDCommand &cmd, BinaryReader &br) co
 	ss << unk2 << ", " << (int)unk3;
 	if (unk3 == 0x0) {
 		// ...
+	} else if (unk3 == 0x03) {
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
 	} else if (unk3 == 0x06) {
 		ss << ", " << parseArgument(arg(SDType::Bytes, 4), br);
 	} else if (unk3 == 0x07) {
 		ss << ", " << parseArgument(arg(SDType::Bytes, 6), br);
 	} else {
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	}
+	ss << ")";
+	fi.line = ss.str();
+	return fi;
+}
+
+FuncInfo ScriptDecompiler::command_C7(const SDCommand &cmd, BinaryReader &br) const {
+	FuncInfo fi;
+	std::stringstream ss;
+	ss << getName(cmd.opcode) << "(";
+	ss << parseArgument(arg(SDType::UInt16), br) << ", ";
+	auto unk2 = br.read<uint8_t>();
+	auto unk3 = br.read<uint16_t>();
+	ss << (int)unk2 << ", " << (int)unk3;
+	if (unk2 == 3) {
 		ss << ", " << parseArgument(arg(SDType::UInt16), br);
 	}
 	ss << ")";

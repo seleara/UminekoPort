@@ -51,6 +51,12 @@
     <ClCompile Include="src\graphics\mask.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\math\clock.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\math\time.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\engine.h">
@@ -120,6 +126,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\graphics\mask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\math\time.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\math\clock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

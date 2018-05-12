@@ -117,6 +117,10 @@ void Window::swapBuffers() {
 	//}
 }
 
+void Window::setTitle(const std::string &title) {
+	glfwSetWindowTitle(window_, title.c_str());
+}
+
 void Window::pushEvent(WindowEvent &&event) {
 	eventQueue_.push_back(std::move(event));
 }

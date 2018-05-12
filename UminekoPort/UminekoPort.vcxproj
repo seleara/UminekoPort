@@ -140,6 +140,8 @@
     <ClCompile Include="src\graphics\texture.cc" />
     <ClCompile Include="src\graphics\uniformbuffer.cc" />
     <ClCompile Include="src\main.cc" />
+    <ClCompile Include="src\math\clock.cc" />
+    <ClCompile Include="src\math\time.cc" />
     <ClCompile Include="src\script\script.cc" />
     <ClCompile Include="src\script\scriptdecompiler.cc" />
     <ClCompile Include="src\util\string.cc" />
@@ -159,6 +161,8 @@
     <ClInclude Include="src\graphics\spritebatch.h" />
     <ClInclude Include="src\graphics\texture.h" />
     <ClInclude Include="src\graphics\uniformbuffer.h" />
+    <ClInclude Include="src\math\clock.h" />
+    <ClInclude Include="src\math\time.h" />
     <ClInclude Include="src\math\transform.h" />
     <ClInclude Include="src\script\script.h" />
     <ClInclude Include="src\script\scriptdecompiler.h" />

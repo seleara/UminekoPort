@@ -45,6 +45,7 @@ public:
 	bool pollEvents(WindowEvent &event);
 	void clear(const glm::vec4 &color);
 	void swapBuffers();
+	void setTitle(const std::string &title);
 protected:
 	void pushEvent(WindowEvent &&event);
 	bool popEvent(WindowEvent &event);

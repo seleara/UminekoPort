@@ -74,15 +74,19 @@ private:
 	std::vector<SDCommandFunc> specialCases_;
 
 	FuncInfo command_41(const SDCommand &cmd, BinaryReader &br) const;
+	FuncInfo command_46(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_4A(const SDCommand &cmd, BinaryReader &br) const;
+	FuncInfo command_4D(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_4E(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_80(const SDCommand &cmd, BinaryReader &br) const;
+	FuncInfo command_80_higu(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_83(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_8D(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_A0(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_B9(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo display_image(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_C2(const SDCommand &cmd, BinaryReader &br) const;
+	FuncInfo command_C7(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_CA(const SDCommand &cmd, BinaryReader &br) const;
 
 

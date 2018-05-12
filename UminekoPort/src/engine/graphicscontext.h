@@ -7,6 +7,7 @@
 #include "../graphics/spritebatch.h"
 #include "../graphics/sprite.h"
 #include "../math/transform.h"
+#include "../math/time.h"
 
 enum class GraphicsLayerType {
 	None,
@@ -44,15 +45,26 @@ public:
 		msgTransform_.position.y = 20;
 		msgTransform_.position.z = 10;
 	}
+
 	void setText(const std::string &text) {
 		done_ = false;
 		text_ = text;
 	}
+
 	void advance() {
 		done_ = true;
 	}
+
 	bool done() const {
 		return done_;
+	}
+
+	void setVisible(bool visible) {
+		visible_ = visible;
+	}
+
+	bool visible() const {
+		return visible_;
 	}
 private:
 	friend class GraphicsContext;
@@ -60,6 +72,7 @@ private:
 	Transform msgTransform_;
 	std::string text_;
 	bool done_ = true;
+	bool visible_ = false;
 };
 
 class GraphicsContext {
@@ -89,8 +102,27 @@ public:
 		msg_.init(archive);
 	}
 
+	void wait(uint32_t frames) {
+		waitTime_ = frames / 60.0;
+		waiting_ = true;
+	}
+
+	bool waitingDone() const {
+		return waiting_ && waitTime_ <= 0.0;
+	}
+
+	void stopWait() {
+		waitTime_ = 0.0;
+		waiting_ = false;
+	}
+
 	void pushMessage(const std::string &text) {
 		msg_.setText(text);
+		msg_.setVisible(true);
+	}
+
+	void hideMessage() {
+		msg_.setVisible(false);
 	}
 
 	void advance() {
@@ -137,6 +169,12 @@ public:
 		layers_[layer].dirty = true;
 	}
 
+	void update() {
+		if (waiting_) {
+			waitTime_ -= Time::deltaTime();
+		}
+	}
+
 	void render() {
 		std::unique_lock<std::mutex> lock(graphicsMutex_);
 		for (auto &layer : layers_) {
@@ -158,7 +196,7 @@ public:
 				batch.add(layer.properties.sprite, layer.properties.transform);
 			}
 		}
-		if (!msg_.done()) {
+		if (msg_.visible()) {
 			batch.add(msg_.msgSprite_, msg_.msgTransform_);
 		}
 		lock.unlock();
@@ -170,4 +208,7 @@ private:
 	std::vector<GraphicsLayer> layers_;
 	Window &window_;
 	Archive &archive_;
+
+	bool waiting_ = false;
+	double waitTime_ = 0.0;
 };
