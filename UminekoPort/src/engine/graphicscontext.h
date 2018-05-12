@@ -1,5 +1,6 @@
 #pragma once
 
+#include <deque>
 #include <mutex>
 
 #include "../window/window.h"
@@ -15,9 +16,28 @@ enum class GraphicsLayerType {
 	Bup
 };
 
+struct GraphicsLayerFilter {
+	enum Flags {
+		None = 0,
+		Sepia = 1,
+		Inverted = 2,
+		Grayscale = 4,
+		White = 8, // ???
+	};
+};
+
+enum class GraphicsLayerBlendMode {
+	None = 0,
+	Add = 1,
+	Subtract = 2
+};
+
 struct GraphicsLayerProperties {
 	Sprite sprite;
 	Transform transform;
+	glm::ivec2 offset;
+	GraphicsLayerFilter::Flags filter;
+	GraphicsLayerBlendMode blendMode;
 };
 
 struct GraphicsLayer {
@@ -46,13 +66,16 @@ public:
 		msgTransform_.position.z = 10;
 	}
 
-	void setText(const std::string &text) {
+	void addText(std::string text) {
 		done_ = false;
-		text_ = text;
+		messages_.push_back(std::move(text));
 	}
 
 	void advance() {
 		done_ = true;
+
+		// if whole message is done (to be implemented)
+		messages_.pop_front();
 	}
 
 	bool done() const {
@@ -70,7 +93,7 @@ private:
 	friend class GraphicsContext;
 	Sprite msgSprite_;
 	Transform msgTransform_;
-	std::string text_;
+	std::deque<std::string> messages_;
 	bool done_ = true;
 	bool visible_ = false;
 };
@@ -79,25 +102,12 @@ class GraphicsContext {
 public:
 	GraphicsContext(Window &window, Archive &archive) : window_(window), archive_(archive) {
 		layers_.resize(0x20);
-		layers_[0x01].newProperties.sprite.anchor = Anchor::Bottom;
-		layers_[0x01].newProperties.sprite.pivot = Pivot::Bottom;
-		layers_[0x01].newProperties.transform.position = glm::vec3(0, -90, 0);
-		layers_[0x02].newProperties.sprite.anchor = Anchor::Bottom;
-		layers_[0x02].newProperties.sprite.pivot = Pivot::Bottom;
-		layers_[0x02].newProperties.transform.position = glm::vec3(0, -90, 0);
-		layers_[0x03].newProperties.sprite.anchor = Anchor::Bottom;
-		layers_[0x03].newProperties.sprite.pivot = Pivot::Bottom;
-		layers_[0x03].newProperties.transform.position = glm::vec3(0, -90, 0);
-
-		layers_[0x08].newProperties.sprite.anchor = Anchor::BottomLeft;
-		layers_[0x08].newProperties.sprite.pivot = Pivot::BottomLeft;
-		layers_[0x08].newProperties.transform.position = glm::vec3(134, -164, 0);
-		layers_[0x09].newProperties.sprite.anchor = Anchor::Bottom;
-		layers_[0x09].newProperties.sprite.pivot = Pivot::Bottom;
-		layers_[0x09].newProperties.transform.position = glm::vec3(0, -164, 0);
-		layers_[0x0a].newProperties.sprite.anchor = Anchor::BottomRight;
-		layers_[0x0a].newProperties.sprite.pivot = Pivot::BottomRight;
-		layers_[0x0a].newProperties.transform.position = glm::vec3(-64, -164, 0);
+		for (auto &layer : layers_) {
+			layer.newProperties.sprite.anchor = Anchor::Bottom;
+			layer.newProperties.sprite.pivot = Pivot::Bottom;
+		}
+		newLayers_.resize(0x20);
+		std::copy(layers_.begin(), layers_.end(), newLayers_.begin());
 
 		msg_.init(archive);
 	}
@@ -117,7 +127,7 @@ public:
 	}
 
 	void pushMessage(const std::string &text) {
-		msg_.setText(text);
+		msg_.addText(text);
 		msg_.setVisible(true);
 	}
 
@@ -134,39 +144,52 @@ public:
 	}
 
 	GraphicsLayerProperties layerProperties(int layer) {
-		return layers_[layer].properties;
+		return layers_[layer].newProperties;
 	}
 
 	void setLayerProperties(int layer, GraphicsLayerProperties properties) {
 		std::lock_guard<std::mutex> lock(graphicsMutex_);
-		layers_[layer].newProperties = properties;
+		auto &l = newLayers_[layer];
+		l.newProperties = std::move(properties);
 	}
 
 	void clearLayer(int layer) {
 		std::lock_guard<std::mutex> lock(graphicsMutex_);
-		layers_[layer].type = GraphicsLayerType::None;
+		newLayers_[layer].type = GraphicsLayerType::None;
 	}
 
 	void setLayer(int layer, Texture texture) {
 		std::lock_guard<std::mutex> lock(graphicsMutex_);
-		layers_[layer].type = GraphicsLayerType::Default;
-		layers_[layer].texture = texture;
-		layers_[layer].dirty = false;
+		auto &l = newLayers_[layer];
+		l.type = GraphicsLayerType::Default;
+		l.texture = texture;
+		l.dirty = false;
 	}
 
 	void setLayer(int layer, const std::string &path) {
 		std::lock_guard<std::mutex> lock(graphicsMutex_);
-		layers_[layer].type = GraphicsLayerType::Default;
-		layers_[layer].texturePath = path;
-		layers_[layer].dirty = true;
+		auto &l = newLayers_[layer];
+		l.type = GraphicsLayerType::Default;
+		l.texturePath = path;
+		l.dirty = true;
 	}
 
 	void setLayerBup(int layer, const std::string &name, const std::string &pose) {
 		std::lock_guard<std::mutex> lock(graphicsMutex_);
-		layers_[layer].texturePath = "bustup/" + name + ".bup";
-		layers_[layer].bupPose = pose;
-		layers_[layer].type = GraphicsLayerType::Bup;
-		layers_[layer].dirty = true;
+		auto &l = newLayers_[layer];
+		l.texturePath = "bustup/" + name + ".bup";
+		l.bupPose = pose;
+		l.type = GraphicsLayerType::Bup;
+		l.dirty = true;
+	}
+
+	void applyLayers() {
+		std::unique_lock<std::mutex> lock(graphicsMutex_);
+		std::cout << "APPLY LAYERS" << std::endl;
+		// implement transition stuff later
+		for (int i = 0; i < layers_.size(); ++i) {
+			layers_[i] = newLayers_[i];
+		}
 	}
 
 	void update() {
@@ -177,7 +200,7 @@ public:
 
 	void render() {
 		std::unique_lock<std::mutex> lock(graphicsMutex_);
-		for (auto &layer : layers_) {
+		auto updateLayer = [&](GraphicsLayer &layer) {
 			if (layer.dirty) {
 				if (layer.type == GraphicsLayerType::Default) {
 					layer.texture.load(layer.texturePath, archive_);
@@ -187,12 +210,20 @@ public:
 				layer.dirty = false;
 			}
 			layer.properties = layer.newProperties;
+		};
+		for (auto &layer : newLayers_) {
+			updateLayer(layer);
+		}
+		for (auto &layer : layers_) {
+			updateLayer(layer);
 		}
 		SpriteBatch batch;
 		for (int i = 0; i < layers_.size(); ++i) {
 			auto &layer = layers_[i];
 			if (layer.type != GraphicsLayerType::None && layer.texture.valid()) {
 				layer.properties.sprite.setTexture(layer.texture);
+				layer.properties.transform.position.x = static_cast<float>(layer.properties.offset.x);
+				layer.properties.transform.position.y = static_cast<float>(layer.properties.offset.y);
 				batch.add(layer.properties.sprite, layer.properties.transform);
 			}
 		}
@@ -206,6 +237,7 @@ private:
 	MessageWindow msg_;
 	std::mutex graphicsMutex_;
 	std::vector<GraphicsLayer> layers_;
+	std::vector<GraphicsLayer> newLayers_; // new state
 	Window &window_;
 	Archive &archive_;
 

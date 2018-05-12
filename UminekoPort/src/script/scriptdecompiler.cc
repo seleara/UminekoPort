@@ -11,7 +11,7 @@
 #include "../engine/engine.h"
 
 std::vector<std::string> ScriptDecompiler::functionNames_ = {
-	"command_00", "command_01", "command_02", "command_03", "command_04", "command_05", "command_06", "command_07", "command_08", "command_09", "command_0A", "command_0B", "command_0C", "command_0D", "command_0E", "command_0F",
+	"nop", "command_01", "command_02", "command_03", "command_04", "command_05", "command_06", "command_07", "command_08", "command_09", "command_0A", "command_0B", "command_0C", "command_0D", "command_0E", "command_0F",
 	"command_10", "command_11", "command_12", "command_13", "command_14", "command_15", "command_16", "command_17", "command_18", "command_19", "command_1A", "command_1B", "command_1C", "command_1D", "command_1E", "command_1F",
 	"command_20", "command_21", "command_22", "command_23", "command_24", "command_25", "command_26", "command_27", "command_28", "command_29", "command_2A", "command_2B", "command_2C", "command_2D", "command_2E", "command_2F",
 	"command_30", "command_31", "command_32", "command_33", "command_34", "command_35", "command_36", "command_37", "command_38", "command_39", "command_3A", "command_3B", "command_3C", "command_3D", "command_3E", "command_3F",
@@ -19,11 +19,11 @@ std::vector<std::string> ScriptDecompiler::functionNames_ = {
 	"command_50", "command_51", "command_52", "command_53", "command_54", "command_55", "command_56", "command_57", "command_58", "command_59", "command_5A", "command_5B", "command_5C", "command_5D", "command_5E", "command_5F",
 	"command_60", "command_61", "command_62", "command_63", "command_64", "command_65", "command_66", "command_67", "command_68", "command_69", "command_6A", "command_6B", "command_6C", "command_6D", "command_6E", "command_6F",
 	"command_70", "command_71", "command_72", "command_73", "command_74", "command_75", "command_76", "command_77", "command_78", "command_79", "command_7A", "command_7B", "command_7C", "command_7D", "command_7E", "command_7F",
-	"command_80", "command_81", "command_82", "wait", "command_84", "command_85", "display_text", "command_87", "command_88", "hide_text", "command_8A", "command_8B", "show_choices", "command_8D", "command_8E", "command_8F",
+	"unlock_content", "command_81", "command_82", "wait", "command_84", "command_85", "display_text", "wait_msg_advance", "return_to_message", "hide_text", "command_8A", "command_8B", "show_choices", "do_transition", "command_8E", "command_8F",
 	"command_90", "command_91", "command_92", "command_93", "command_94", "command_95", "command_96", "command_97", "command_98", "command_99", "command_9A", "command_9B", "command_9C", "command_9D", "command_9E", "command_9F",
 	"command_A0", "command_A1", "command_A2", "command_A3", "command_A4", "command_A5", "command_A6", "command_A7", "command_A8", "command_A9", "command_AA", "command_AB", "command_AC", "command_AD", "command_AE", "command_AF",
-	"command_B0", "command_B1", "command_B2", "command_B3", "command_B4", "command_B5", "command_B6", "command_B7", "command_B8", "command_B9", "command_BA", "command_BB", "command_BC", "command_BD", "command_BE", "command_BF",
-	"command_C0", "display_image", "command_C2", "command_C3", "command_C4", "command_C5", "command_C6", "command_C7", "command_C8", "command_C9", "command_CA", "command_CB", "command_CC", "command_CD", "command_CE", "command_CF",
+	"command_B0", "play_movie", "command_B2", "movie_related_B3", "movie_related_B4", "command_B5", "command_B6", "command_B7", "command_B8", "command_B9", "command_BA", "command_BB", "command_BC", "command_BD", "unlock_trophy", "command_BF",
+	"command_C0", "display_image", "set_layer_property", "command_C3", "command_C4", "command_C5", "command_C6", "command_C7", "command_C8", "command_C9", "command_CA", "command_CB", "command_CC", "command_CD", "command_CE", "command_CF",
 	"command_D0", "command_D1", "command_D2", "command_D3", "command_D4", "command_D5", "command_D6", "command_D7", "command_D8", "command_D9", "command_DA", "command_DB", "command_DC", "command_DD", "command_DE", "command_DF",
 	"command_E0", "command_E1", "command_E2", "command_E3", "command_E4", "command_E5", "command_E6", "command_E7", "command_E8", "command_E9", "command_EA", "command_EB", "command_EC", "command_ED", "command_EE", "command_EF",
 	"command_F0", "command_F1", "command_F2", "command_F3", "command_F4", "command_F5", "command_F6", "command_F7", "command_F8", "command_F9", "command_FA", "command_FB", "command_FC", "command_FD", "command_FE", "command_FF"
@@ -39,7 +39,6 @@ void ScriptDecompiler::setup() {
 	for (auto &cmd : commands_) {
 		cmd.opcode = -1;
 	}
-	commands_[0x01] = { 0x01, { arg(SDType::UInt8) } }; // ???
 	commands_[0x40] = { 0x40, { arg(SDType::Bytes, 3) } }; // ???
 	commands_[0x41] = { 0x41, {} }; // special case
 	commands_[0x42] = { 0x42, { arg(SDType::UInt16), arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::Bytes, 2) } };
@@ -52,7 +51,7 @@ void ScriptDecompiler::setup() {
 	commands_[0x4D] = { 0x4D, {/* count, count * u16 */} }; // special case
 	commands_[0x4E] = { 0x4E, {/* count, count * u16 */} }; // special case
 	commands_[0x64] = { 0x64, { arg(SDType::Bytes, 1) } }; // ???
-	commands_[0x80] = { 0x80, { arg(SDType::Bytes, 2) } }; // special case
+	commands_[0x80] = { 0x80, { arg(SDType::UInt16) } }; // special case
 	commands_[0x81] = { 0x81, { arg(SDType::UInt16), arg(SDType::Int16) } };
 	commands_[0x82] = { 0x82, { arg(SDType::UInt16) } };
 	commands_[0x83] = { 0x83, { arg(SDType::Bytes, 2) } }; // special case
@@ -61,7 +60,7 @@ void ScriptDecompiler::setup() {
 	commands_[0x87] = { 0x87, { arg(SDType::Int16) } };
 	commands_[0x88] = { 0x88, {} };
 	commands_[0x89] = { 0x89, {} };
-	commands_[0x8C] = { 0x8C, { arg(SDType::Bytes, 4), arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::String8), arg(SDType::String8) } };
+	commands_[0x8C] = { 0x8C, { arg(SDType::Bytes, 4), arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::String8), arg(SDType::SplitString8) } };
 	commands_[0x8D] = { 0x8D, {} }; // special case?
 	if (script_.version() == 0x01)
 		commands_[0x8E] = { 0x8E, {} };
@@ -81,13 +80,13 @@ void ScriptDecompiler::setup() {
 	commands_[0xAE] = { 0xAE, { arg(SDType::Bytes, 2) } };
 	commands_[0xAF] = { 0xAF, { arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::Bytes, 2) } };
 	commands_[0xB0] = { 0xB0, { arg(SDType::Bytes, 2), arg(SDType::String8) } };
-	commands_[0xB1] = { 0xB1, { arg(SDType::Bytes, 3) } };
+	commands_[0xB1] = { 0xB1, { arg(SDType::UInt16) } };
 	commands_[0xB3] = { 0xB3, {} };
 	commands_[0xB4] = { 0xB4, {} };
 	commands_[0xB6] = { 0xB6, {} };
 	commands_[0xB9] = { 0xB9, {} }; // special case
 	commands_[0xBD] = { 0xB3, { arg(SDType::Bytes, 3) } };
-	commands_[0xBE] = { 0xBE, { arg(SDType::Bytes, 2) } };
+	commands_[0xBE] = { 0xBE, { arg(SDType::UInt16) } };
 	commands_[0xBF] = { 0xBF, { arg(SDType::Bytes, 4) } };
 	commands_[0xC0] = { 0xC0, {} };
 	commands_[0xC1] = { 0xC1, { arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::UInt8) } }; // special case
@@ -157,7 +156,7 @@ void ScriptDecompiler::decompile(const std::string &path, const std::vector<unsi
 			lines.insert({ offset, ss.str() });
 			break;
 		}
-		lines.insert({ offset, funcInfo.line });
+		lines.insert({ offset, std::move(funcInfo.line) });
 		for (auto &jump : funcInfo.jumps) {
 			jumps.insert(jump);
 		}
@@ -248,7 +247,7 @@ std::string ScriptDecompiler::parseArgument(const SDArgument &arg, BinaryReader 
 		break;
 	case SDType::UInt16: {
 		auto val = br.read<uint16_t>();
-		if (val & 0x8000) {
+		if ((val >> 0xc) == 0x8) {
 			ss << "var[" << (val & ~0x8000) << "]";
 		} else {
 			ss << val;
@@ -257,7 +256,7 @@ std::string ScriptDecompiler::parseArgument(const SDArgument &arg, BinaryReader 
 	}
 	case SDType::Int16: {
 		auto val = br.read<uint16_t>();
-		if (val & 0x8000) {
+		if ((val >> 0xc) == 0x8) {
 			ss << "var[" << (val & ~0x8000) << "]";
 		} else {
 			ss << (int16_t)val;
@@ -294,6 +293,21 @@ std::string ScriptDecompiler::parseArgument(const SDArgument &arg, BinaryReader 
 		auto str = br.readString(strSize - 1);
 		br.skip(1);
 		ss << "\"" << str << "\"";
+		break;
+	}
+	case SDType::SplitString8: {
+		auto strSize = br.read<uint8_t>();
+		auto str = br.readString(strSize - 1);
+		br.skip(1);
+		ss << "[";
+		int stringStart = 0;
+		for (int i = 0; i < str.size() - 1; ++i) {
+			if (str[i] == 0) {
+				ss << "\"" << str.substr(stringStart, i - stringStart) << "\", ";
+				stringStart = i + 1;
+			}
+		}
+		ss << "\"" << str.substr(stringStart, str.size() - stringStart - 1) << "\"]";
 		break;
 	}
 	case SDType::Addr:
@@ -497,9 +511,18 @@ FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) co
 	std::stringstream ss;
 	ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br) << ", ";
 	next &= ~0x80;
-	if (next == 0x02)
-		ss << parseArgument(arg(SDType::UInt16), br) << ")";
-	else if (next == 0x03) {
+	if (next == 0x02) // simple fade afaik
+		ss << parseArgument(arg(SDType::UInt16), br) << ")"; // time in frames (60fps)
+	else if (next == 0x03) { // specified mask
+		auto maskId = br.read<uint16_t>();
+		if (isVariable(maskId)) {
+			br.skip(-2);
+			ss << parseArgument(arg(SDType::UInt16), br);
+		} else {
+			ss << "\"mask/" << std::string(script_.masks_[maskId].name) << ".msk\"";
+		}
+		ss << ", " << parseArgument(arg(SDType::UInt16), br) << ")"; // frames
+	} else if (next == 0x0C) {
 		ss << parseArgument(arg(SDType::UInt16), br);
 		ss << ", " << parseArgument(arg(SDType::UInt16), br) << ")";
 	} else if (next == 0x0E) {
@@ -577,7 +600,7 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 			ss << ") // cgId = " << spriteId;
 		} else if (type == 4) {
 			// anim?
-			ss << ", \"anime/" << std::string(script_.anims_[spriteId].name) << ".???\"";
+			ss << ", \"anime/" << std::string(script_.anims_[spriteId].name) << ".bsf\"";
 			auto animUnknown = br.read<uint16_t>();
 			ss << ", " << animUnknown << ") // animId = " << spriteId;
 		} else if (type == 1) {
@@ -609,14 +632,14 @@ FuncInfo ScriptDecompiler::command_C2(const SDCommand &cmd, BinaryReader &br) co
 	if (unk3 == 0x0) {
 		// ...
 	} else if (unk3 == 0x03) {
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::Int16), br);
+		ss << ", " << parseArgument(arg(SDType::Int16), br);
 	} else if (unk3 == 0x06) {
 		ss << ", " << parseArgument(arg(SDType::Bytes, 4), br);
 	} else if (unk3 == 0x07) {
 		ss << ", " << parseArgument(arg(SDType::Bytes, 6), br);
 	} else {
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::Int16), br);
 	}
 	ss << ")";
 	fi.line = ss.str();

@@ -64,6 +64,7 @@ private:
 	void writeImage(const std::string &path, unsigned char *data, int width, int height, int scanline);
 	void extractTxa(ArchiveEntry &txa);
 	void extractBup(ArchiveEntry &bup);
+	void extractPic(ArchiveEntry &pic);
 
 	ArchiveEntry root_;
 

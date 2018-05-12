@@ -58,6 +58,7 @@ void Archive::explore(ArchiveEntry &folder) {
 	} else if (cmd.substr(0, 7) == "export " || cmd.substr(0, 10) == "exportraw ") {
 		bool raw = cmd.substr(0, 10) == "exportraw ";
 		auto file = raw ? cmd.substr(10) : cmd.substr(7);
+		std::transform(file.begin(), file.end(), file.begin(), ::tolower);
 		auto iter = folder.childrenNames.find(file);
 		if (iter != folder.childrenNames.end()) {
 			auto &child = folder.children[iter->second];
@@ -67,6 +68,8 @@ void Archive::explore(ArchiveEntry &folder) {
 					extractTxa(child);
 				} else if (ext == ".bup") {
 					extractBup(child);
+				} else if (ext == ".pic") {
+					extractPic(child);
 				} else {
 					std::ofstream ofs(child.name, std::ios_base::binary);
 					BinaryReader br(ifs_);
@@ -461,6 +464,46 @@ Pic Archive::getPic(const std::string &path) {
 	}
 
 	return pic;
+}
+
+void Archive::extractPic(ArchiveEntry &entry) {
+	BinaryReader br(ifs_);
+	br.seekg(entry.offset);
+
+	auto header = br.read<PicHeader>();
+
+	std::vector<PicChunk> chunks(header.chunks);
+	br.read((char *)chunks.data(), header.chunks * sizeof(PicChunk));
+
+	Pic pic;
+	pic.name = entry.name;
+	pic.pixels.resize(4 * header.width * header.height);
+	pic.width = header.width;
+	pic.height = header.height;
+
+	for (int i = 0; i < header.chunks; ++i) {
+		PicChunk &chunk = chunks[i];
+
+		auto size = chunk.size;
+		unsigned char *buffer = new unsigned char[size];
+		auto chunkStride = 4 * ((chunk.width + 3) & 0xfffc);
+		unsigned char *result = new unsigned char[chunk.height * chunkStride];
+
+		br.seekg(entry.offset + chunk.offset);
+		br.read((char *)buffer, size);
+
+		decode(buffer, size, result);
+		dpcm(result, result, chunk.width, chunk.height, chunkStride);
+		for (int y = 0; y < chunk.height; ++y) {
+			/*for (int x = 0; x < chunk.width * 4; ++x) {
+			pic.pixels[chunk.left * 4 + x + (chunk.top + y) * header.width * 4] = result[x + y * chunkStride];
+			}*/
+			memcpy(&pic.pixels[chunk.left * 4 + (chunk.top + y) * header.width * 4], result + y * chunkStride, chunkStride);
+		}
+		delete[] buffer;
+		delete[] result;
+	}
+	writeImage(pic.name + "_test.png", pic.pixels.data(), header.width, header.height, 4 * header.width);
 }
 
 Bup Archive::getBup(const std::string &path) {

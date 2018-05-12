@@ -17,6 +17,7 @@ enum class SDType {
 	Double,
 	String8,
 	String16,
+	SplitString8,
 	Addr,
 	JumpAddr, // Separating just in case
 	Sprite,
@@ -63,6 +64,10 @@ private:
 	FuncInfo buildFunction(const SDCommand &cmd, BinaryReader &br) const;
 	const std::string &getName(uint8_t opcode) const;
 	std::string parseArgument(const SDArgument &arg, BinaryReader &br) const;
+
+	bool isVariable(uint16_t value) const {
+		return ((value >> 0xC) & 0xF) == 0x8;
+	}
 
 	static std::vector<std::string> functionNames_;
 	static std::vector<SDCommand> commands_;

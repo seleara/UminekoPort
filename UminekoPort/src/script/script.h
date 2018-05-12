@@ -13,6 +13,10 @@ struct ScriptHeader {
 	uint32_t unknown;
 };
 
+struct MaskEntry {
+	char name[0xC];
+};
+
 struct SpriteEntry {
 	char name[0x18];
 	char pose[0x10];
@@ -26,6 +30,7 @@ struct CgEntry {
 struct AnimEntry {
 	char name[0x20];
 	int16_t unknown;
+	int16_t unknown2;
 };
 
 enum class ImageType {
@@ -62,6 +67,7 @@ private:
 	std::atomic<bool> paused_;
 	std::atomic<bool> stopped_;
 	GraphicsContext &ctx_;
+	std::vector<MaskEntry> masks_;
 	std::vector<SpriteEntry> sprites_;
 	std::vector<CgEntry> cgs_;
 	std::vector<AnimEntry> anims_;
@@ -79,14 +85,15 @@ private:
 	void executeCommand(BinaryReader &br, Archive &archive);
 
 	int16_t getVariable(uint16_t value) {
-		if (value & 0x8000) {
+		// Negative values that aren't variables also work so not 100% sure where the "cut-off point" is
+		if ((value >> 0xC) == 0x8) {
 			return variables_[value & ~0x8000];
 		}
 		return (int16_t)value;
 	}
 
 	void setVariable(uint16_t variable, uint16_t value) {
-		if ((variable & 0x8000) == 0) {
+		if ((variable >> 0xC) != 0x8) {
 			throw std::runtime_error("Not a variable: " + std::to_string(variable));
 		}
 		variables_[variable & ~0x8000] = value;
@@ -262,10 +269,14 @@ private:
 		br.skip(4);
 	}
 	void command86(BinaryReader &br, Archive &archive) {
-		br.skip(4);
+		ctx_.applyLayers();
+		auto msgId = getVariable(br.read<uint16_t>());
+		br.skip(1); // ???
+		auto shouldPause = br.read<uint8_t>();
 		auto text = readString16(br);
 		ctx_.pushMessage(text);
-		pause();
+		if (shouldPause)
+			pause();
 	}
 	void command87(BinaryReader &br, Archive &archive) {
 		auto unk = br.read<int16_t>(); // ???
@@ -284,12 +295,15 @@ private:
 	void command8D(BinaryReader &br, Archive &archive) {
 		auto next = br.read<uint8_t>();
 		next &= ~0x80;
-		if (next == 0x02)
+		if (next == 0x02) // fade
 			br.skip(2);
-		else if (next == 0x03)
+		else if (next == 0x03) // mask
+			br.skip(4);
+		else if (next == 0x0C)
 			br.skip(4);
 		else if (next == 0x0E)
 			br.skip(6);
+		ctx_.applyLayers();
 	}
 	void command9C(BinaryReader &br, Archive &archive) {
 		//br.skip(4);
@@ -352,6 +366,8 @@ private:
 		br.skip(4);
 	}
 	void displayImage(BinaryReader &br, Archive &archive);
+
+	// Set layer property
 	void commandC2(BinaryReader &br, Archive &archive);
 	void commandC3(BinaryReader &br, Archive &archive) {
 		br.skip(4);

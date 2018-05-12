@@ -92,6 +92,11 @@ void Script::load(const std::string &path, Archive &archive) {
 	auto unknown3Offset = br.read<uint32_t>();
 	auto characterProfileOffset = br.read<uint32_t>();
 
+	br.seekg(maskOffset);
+	auto maskCount = br.read<uint32_t>();
+	masks_.resize(maskCount);
+	br.read((char *)masks_.data(), maskCount * sizeof(MaskEntry));
+
 	br.seekg(spriteOffset);
 	auto spriteCount = br.read<uint32_t>();
 	sprites_.resize(spriteCount);
@@ -104,7 +109,7 @@ void Script::load(const std::string &path, Archive &archive) {
 
 	br.seekg(animeOffset);
 	auto animCount = br.read<uint32_t>();
-	anims_.resize(cgCount);
+	anims_.resize(animCount);
 	br.read((char *)anims_.data(), animCount * sizeof(AnimEntry));
 
 	/*for (const auto &s : sprites_) {
@@ -186,15 +191,49 @@ void Script::displayImage(BinaryReader &br, Archive &archive) {
 
 void Script::commandC2(BinaryReader &br, Archive &archive) {
 	auto layer = getVariable(br.read<uint16_t>());
-	auto unk2 = br.read<uint16_t>();
+	auto prop = br.read<uint16_t>();
 	auto unk3 = br.read<uint8_t>();
 	if (unk3 == 0x0) {
 		// ...
+	} else if (unk3 == 0x01) {
+		auto props = ctx_.layerProperties(layer);
+		auto value = getVariable(br.read<uint16_t>());
+		switch (prop) {
+		case 1:
+			props.sprite.color.a = (value & 0xff) / 255.0f;
+			break;
+		case 2:
+			props.sprite.color.r = (value & 0xff) / 255.0f;
+			break;
+		case 3:
+			props.sprite.color.g = (value & 0xff) / 255.0f;
+			break;
+		case 4:
+			props.sprite.color.b = (value & 0xff) / 255.0f;
+			break;
+		case 5:
+			props.filter = (GraphicsLayerFilter::Flags)(value & 0xf);
+			break;
+		case 6:
+			if (value > 2) {
+				throw std::runtime_error("Unhandled blend mode, investigate.");
+			}
+			props.blendMode = (GraphicsLayerBlendMode)value;
+			break;
+		case 7:
+			props.offset.x = value;
+			break;
+		case 8:
+			props.offset.y = value;
+		default: // to be implemented
+			break;
+		}
+		ctx_.setLayerProperties(layer, props);
 	} else if (unk3 == 0x06) {
 		br.skip(4);
 	} else if (unk3 == 0x07) {
 		br.skip(6);
 	} else {
-		br.skip(2);
+		//br.skip(2);
 	}
 }
