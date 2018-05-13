@@ -375,6 +375,14 @@ struct PicChunk {
 	uint32_t size;
 };
 
+struct MskHeader {
+	uint32_t magic; // 0x334B534D MSK3
+	uint32_t fileSize;
+	uint16_t width;
+	uint16_t height;
+	uint32_t unknown;
+};
+
 Txa Archive::getTxa(const std::string &path) {
 	auto &entry = get(path);
 	BinaryReader br(ifs_);
@@ -464,6 +472,29 @@ Pic Archive::getPic(const std::string &path) {
 	}
 
 	return pic;
+}
+
+Msk Archive::getMsk(const std::string &path) {
+	auto &entry = get(path);
+	BinaryReader br(ifs_);
+	br.seekg(entry.offset);
+
+	auto header = br.read<MskHeader>();
+
+	Msk msk;
+	msk.name = path;
+	msk.width = header.width;
+	msk.height = header.height;
+	msk.pixels.resize(msk.width * msk.height);
+
+	// just to test the shader
+	for (int i = 0; i < msk.height; ++i) {
+		for (int j = 0; j < msk.width; ++j) {
+			msk.pixels[i * msk.width + j] = (255.0 / msk.height) * i;
+		}
+	}
+
+	return msk;
 }
 
 void Archive::extractPic(ArchiveEntry &entry) {

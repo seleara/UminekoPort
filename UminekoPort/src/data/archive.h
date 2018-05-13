@@ -46,6 +46,12 @@ struct Pic {
 	std::vector<unsigned char> pixels;
 };
 
+struct Msk {
+	std::string name;
+	uint32_t width, height;
+	std::vector<unsigned char> pixels;
+};
+
 class Archive {
 public:
 	void open(const std::string &path);
@@ -54,6 +60,7 @@ public:
 	Txa getTxa(const std::string &path);
 	Bup getBup(const std::string &path);
 	Pic getPic(const std::string &path);
+	Msk getMsk(const std::string &path);
 private:
 	ArchiveEntry &get(const std::string &path);
 	void scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br);

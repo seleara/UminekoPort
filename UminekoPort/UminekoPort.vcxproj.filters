@@ -137,10 +137,14 @@
     <ClInclude Include="src\math\clock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\graphics\framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\2d.glsl" />
     <None Include="shaders\common\common2d.glsl" />
-    <None Include="shaders\2d_transition.glsl" />
+    <None Include="shaders\gc_transition.glsl" />
+    <None Include="shaders\gc.glsl" />
   </ItemGroup>
 </Project>

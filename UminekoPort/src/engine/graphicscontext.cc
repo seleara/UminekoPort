@@ -5,7 +5,7 @@
 
 GraphicsContext::GraphicsContext(Window &window, Archive &archive) : window_(window), archive_(archive) {
 	// Prev framebuffer
-	prevTexture_.create(window_.fboSize().x, window_.fboSize().y);
+	/*prevTexture_.create(window_.fboSize().x, window_.fboSize().y);
 	//glGenTextures(1, &prevTexture_.resource_->texture_);
 	//glBindTexture(GL_TEXTURE_RECTANGLE, prevTexture_.resource_->texture_);
 	//glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -21,10 +21,12 @@ GraphicsContext::GraphicsContext(Window &window, Archive &archive) : window_(win
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_.fboSize().x, window_.fboSize().y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, prevDepthRb_);
 
-	if (!window_.checkFramebufferStatus()) throw std::runtime_error("Framebuffer error.");
+	if (!window_.checkFramebufferStatus()) throw std::runtime_error("Framebuffer error.");*/
+
+	prevFramebuffer_.create(window_.fboSize().x, window_.fboSize().y);
 
 	// Next framebuffer
-	nextTexture_.create(window_.fboSize().x, window_.fboSize().y);
+	/*nextTexture_.create(window_.fboSize().x, window_.fboSize().y);
 	//glGenTextures(1, &nextTexture_.resource_->texture_);
 	//glBindTexture(GL_TEXTURE_RECTANGLE, nextTexture_.resource_->texture_);
 	//glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -40,7 +42,9 @@ GraphicsContext::GraphicsContext(Window &window, Archive &archive) : window_(win
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_.fboSize().x, window_.fboSize().y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, nextDepthRb_);
 
-	if (!window_.checkFramebufferStatus()) throw std::runtime_error("Framebuffer error.");
+	if (!window_.checkFramebufferStatus()) throw std::runtime_error("Framebuffer error.");*/
+
+	nextFramebuffer_.create(window_.fboSize().x, window_.fboSize().y);
 
 	layers_.resize(0x20);
 	for (auto &layer : layers_) {
@@ -52,9 +56,11 @@ GraphicsContext::GraphicsContext(Window &window, Archive &archive) : window_(win
 
 	msg_.init(archive);
 
-	Shader transitionShader;
-	transitionShader.load("shaders/2d_transition.glsl");
-	transitionShader.saveCache("2d_transition");
+	Shader gcShader, transitionShader;
+	gcShader.load("shaders/gc.glsl");
+	gcShader.saveCache("gc");
+	transitionShader.load("shaders/gc_transition.glsl");
+	transitionShader.saveCache("gc_transition");
 
 	UniformBuffer::createUniformBuffer<ShaderTransition>("trans", 2);
 	UniformBuffer::bindUniformBuffer("trans");
@@ -64,19 +70,22 @@ GraphicsContext::GraphicsContext(Window &window, Archive &archive) : window_(win
 }
 
 void GraphicsContext::resize() {
-	glBindRenderbuffer(GL_RENDERBUFFER, prevDepthRb_);
+	/*glBindRenderbuffer(GL_RENDERBUFFER, prevDepthRb_);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_.fboSize().x, window_.fboSize().y);
-	glBindTexture(GL_TEXTURE_2D, prevTexture_.id());
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glBindTexture(GL_TEXTURE_RECTANGLE, prevTexture_.id());
+	glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	prevTexture_.resource_->size_.x = window_.fboSize().x;
 	prevTexture_.resource_->size_.y = window_.fboSize().y;
 
 	glBindRenderbuffer(GL_RENDERBUFFER, nextDepthRb_);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_.fboSize().x, window_.fboSize().y);
-	glBindTexture(GL_TEXTURE_2D, nextTexture_.id());
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glBindTexture(GL_TEXTURE_RECTANGLE, nextTexture_.id());
+	glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	nextTexture_.resource_->size_.x = window_.fboSize().x;
-	nextTexture_.resource_->size_.y = window_.fboSize().y;
+	nextTexture_.resource_->size_.y = window_.fboSize().y;*/
+
+	prevFramebuffer_.resize(window_.fboSize().x, window_.fboSize().y);
+	nextFramebuffer_.resize(window_.fboSize().x, window_.fboSize().y);
 }
 
 void GraphicsContext::update() {
@@ -123,7 +132,8 @@ void GraphicsContext::render() {
 	};
 
 	// Render previous state
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, prevFramebuffer_);
+	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, prevFramebuffer_);
+	prevFramebuffer_.bindDraw();
 	for (int i = 0; i < layers_.size(); ++i) {
 		auto &layer = layers_[i];
 		addToBatch(layer);
@@ -132,7 +142,8 @@ void GraphicsContext::render() {
 	batch.clear();
 
 	// Render next state
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, nextFramebuffer_);
+	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, nextFramebuffer_);
+	nextFramebuffer_.bindDraw();
 	for (int i = 0; i < newLayers_.size(); ++i) {
 		auto &layer = newLayers_[i];
 		addToBatch(layer);
@@ -141,84 +152,73 @@ void GraphicsContext::render() {
 	batch.clear();
 
 	window_.bindFramebuffer();
+
+	glDisable(GL_DEPTH_TEST);
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	auto x2 = 1920.0f; // window_.fboSize().x;
+	auto y2 = 1080.0f; // window_.fboSize().y;
+	auto tx2 = 1.0f; // window_.fboSize().x;
+	auto ty2 = 1.0f; // window_.fboSize().y;
+	float vertices[] = {
+		0.0f, 0.0f, 0.0f, ty2, 1.0f, 1.0f, 1.0f, 1.0f,
+		0.0f, y2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+		x2, 0.0f, tx2, ty2, 1.0f, 1.0f, 1.0f, 1.0f,
+		x2, y2, tx2, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	};
+
+	VertexBuffer<float> vb;
+	vb.upload(vertices, sizeof(vertices));
+	vb.bind();
+	vb.setAttribute(0, 2, 8, 0);
+	vb.setAttribute(1, 2, 8, 2);
+	vb.setAttribute(2, 4, 8, 4);
+
+	Shader shader;
 	if (isTransitioning_) {
-		auto x2 = window_.fboSize().x;
-		auto y2 = window_.fboSize().y;
-		float vertices[] = {
-			0.0f, 0.0f, 0.0f, y2, 1.0f, 1.0f, 1.0f, 1.0f,
-			0.0f, y2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-			x2, 0.0f, x2, y2, 1.0f, 1.0f, 1.0f, 1.0f,
-			x2, y2, x2, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-		};
-		
-		glDisable(GL_DEPTH_TEST);
-
-		GLuint vao;
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
-
-		Shader shader;
-		shader.loadCache("2d_transition");
+		shader.loadCache("gc_transition");
 		shader.bind();
 
 		glActiveTexture(GL_TEXTURE0);
-		prevTexture_.bind();
+		prevFramebuffer_.texture().bind();
 
 		glActiveTexture(GL_TEXTURE0 + 1);
-		nextTexture_.bind();
+		nextFramebuffer_.texture().bind();
 
-		VertexBuffer<float> vb;
-		vb.upload(vertices, sizeof(vertices));
+		auto trans = UniformBuffer::uniformBuffer<ShaderTransition>("trans");
+		if (useMask_) {
+			if (maskDirty_) {
+				transitionMask_.loadMsk(maskFilename_, archive_, true);
+				maskDirty_ = false;
+			}
+			trans->progress.y = 1.0f;
 
-		vb.bind();
-		vb.setAttribute(0, 2, 8, 0);
-		vb.setAttribute(1, 2, 8, 2);
-		vb.setAttribute(2, 4, 8, 4);
+			glActiveTexture(GL_TEXTURE0 + 2);
+			transitionMask_.bind();
+		} else {
+			auto trans = UniformBuffer::uniformBuffer<ShaderTransition>("trans");
+			trans->progress.y = 0.0f;
+		}
+		trans.update();
+
 		vb.draw(Primitives::TriangleStrip, 0, 4);
 		vb.release();
 
-		glBindVertexArray(0);
-		glDeleteVertexArrays(1, &vao);
-
-		glEnable(GL_DEPTH_TEST);
 	} else {
-		auto x2 = window_.fboSize().x;
-		auto y2 = window_.fboSize().y;
-		float vertices[] = {
-			0.0f, 0.0f, 0.0f, y2, 1.0f, 1.0f, 1.0f, 1.0f,
-			0.0f, y2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-			x2, 0.0f, x2, y2, 1.0f, 1.0f, 1.0f, 1.0f,
-			x2, y2, x2, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-		};
-
-		glDisable(GL_DEPTH_TEST);
-
-		GLuint vao;
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
-
-		Shader shader;
-		shader.loadCache("2d");
+		shader.loadCache("gc");
 		shader.bind();
 
 		glActiveTexture(GL_TEXTURE0);
-		prevTexture_.bind();
+		prevFramebuffer_.texture().bind();
 
-		VertexBuffer<float> vb;
-		vb.upload(vertices, sizeof(vertices));
-
-		vb.bind();
-		vb.setAttribute(0, 2, 8, 0);
-		vb.setAttribute(1, 2, 8, 2);
-		vb.setAttribute(2, 4, 8, 4);
 		vb.draw(Primitives::TriangleStrip, 0, 4);
 		vb.release();
-
-		glBindVertexArray(0);
-		glDeleteVertexArrays(1, &vao);
-
-		glEnable(GL_DEPTH_TEST);
 	}
+	glBindVertexArray(0);
+	glDeleteVertexArrays(1, &vao);
+	glEnable(GL_DEPTH_TEST);
 
 	//lock.unlock();
 	if (msg_.visible()) {

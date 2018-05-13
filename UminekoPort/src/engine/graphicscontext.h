@@ -4,6 +4,7 @@
 #include <mutex>
 
 #include "../window/window.h"
+#include "../graphics/framebuffer.h"
 #include "../graphics/texture.h"
 #include "../graphics/spritebatch.h"
 #include "../graphics/sprite.h"
@@ -125,6 +126,16 @@ public:
 	}
 
 	void transition(uint32_t frames) {
+		useMask_ = false;
+		isTransitioning_ = true;
+		transitionSpeed_ = frames / 60.0;
+		transitionProgress_ = 0;
+	}
+
+	void transition(const std::string &maskFilename, uint32_t frames) {
+		useMask_ = true;
+		maskDirty_ = true;
+		maskFilename_ = maskFilename;
 		isTransitioning_ = true;
 		transitionSpeed_ = frames / 60.0;
 		transitionProgress_ = 0;
@@ -217,14 +228,19 @@ private:
 	Window &window_;
 	Archive &archive_;
 
-	bool isTransitioning_ = false;
+	bool isTransitioning_ = false, useMask_ = false;
 	double transitionSpeed_ = 0;
 	double transitionProgress_ = 0;
 
+	bool maskDirty_ = false;
+	std::string maskFilename_;
+
 	//GLuint prevTexture_, nextTexture_;
-	Texture prevTexture_, nextTexture_;
-	GLuint prevFramebuffer_, nextFramebuffer_;
-	GLuint prevDepthRb_, nextDepthRb_;
+	//Texture prevTexture_, nextTexture_;
+	//GLuint prevFramebuffer_, nextFramebuffer_;
+	//GLuint prevDepthRb_, nextDepthRb_;
+	Framebuffer prevFramebuffer_, nextFramebuffer_;
+	Texture transitionMask_;
 
 	bool waiting_ = false;
 	double waitTime_ = 0.0;

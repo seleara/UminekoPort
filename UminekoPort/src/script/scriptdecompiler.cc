@@ -743,9 +743,10 @@ FuncInfo ScriptDecompiler::command_C7(const SDCommand &cmd, BinaryReader &br) co
 	if (unk2 == 3) {
 		ss << ", " << parseArgument(arg(SDType::UInt16), br);
 	} else if (unk2 == 0) {
-		//ss << ", " << parseArgument(arg(SDType::Bytes, 6), br);
 		if (Engine::game == "chiru") { // why? same script version (presumably)
 			ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
+		} else {
+			ss << ", " << parseArgument(arg(SDType::Bytes, 6), br);
 		}
 	}
 	ss << ")";

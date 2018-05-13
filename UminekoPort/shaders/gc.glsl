@@ -29,17 +29,10 @@ in VertexData {
 
 out vec4 color;
 
-layout(binding = 2) uniform Transition {
-	uniform vec4 progress;
-} trans;
-
-layout(binding = 0) uniform sampler2DRect prevTex;
-layout(binding = 1) uniform sampler2DRect nextTex;
+uniform sampler2D tex;
 
 void main() {
-	vec4 prev = texture(prevTex, fs_in.texcoord);
-	vec4 next = texture(nextTex, fs_in.texcoord);
-	color = fs_in.color * mix(prev, next, trans.progress.x);
+	color = fs_in.color * texture(tex, fs_in.texcoord);
 }
 
 #endif

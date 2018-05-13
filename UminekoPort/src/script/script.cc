@@ -187,7 +187,7 @@ void Script::command8D(BinaryReader &br, Archive &archive) {
 	} else if (next == 0x03) { // mask
 		auto maskId = getVariable(br.read<uint16_t>());
 		auto frames = getVariable(br.read<uint16_t>());
-		ctx_.transition(frames);
+		ctx_.transition("mask/" + std::string(masks_[maskId].name) + ".msk", frames);
 		pause();
 	} else if (next == 0x0C)
 		br.skip(4);

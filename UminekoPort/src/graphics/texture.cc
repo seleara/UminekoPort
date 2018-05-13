@@ -5,14 +5,16 @@
 //std::set<std::string> TextureCache::cacheCounter_;
 std::map<std::string, std::shared_ptr<TextureResource>> TextureCache::cache_;
 
-void TextureResource::create(int width, int height) {
+void TextureResource::create(int width, int height, bool normalized) {
+	normalized_ = normalized;
 	glGenTextures(1, &texture_);
-	glBindTexture(GL_TEXTURE_RECTANGLE, texture_);
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	auto texEnum = normalized_ ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE;
+	glBindTexture(texEnum, texture_);
+	glTexParameteri(texEnum, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(texEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(texEnum, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(texEnum, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(texEnum, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	size_.x = width;
 	size_.y = height;
 }
@@ -83,9 +85,25 @@ void TextureResource::loadTxa(const std::string &path, Archive &archive, const s
 	size_.y = entry->height;
 }
 
-std::shared_ptr<TextureResource> TextureCache::create(int width, int height) {
+void TextureResource::loadMsk(const std::string &path, Archive &archive, bool normalized) {
+	normalized_ = normalized;
+	auto texEnum = normalized_ ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE;
+	auto msk = archive.getMsk(path);
+	glGenTextures(1, &texture_);
+	glBindTexture(texEnum, texture_);
+	glTexParameteri(texEnum, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(texEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(texEnum, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(texEnum, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(texEnum, 0, GL_RED, msk.width, msk.height, 0, GL_RED, GL_UNSIGNED_BYTE, msk.pixels.data());
+	glObjectLabel(GL_TEXTURE, texture_, static_cast<GLsizei>(path.size()), path.c_str());
+	size_.x = msk.width;
+	size_.y = msk.height;
+}
+
+std::shared_ptr<TextureResource> TextureCache::create(int width, int height, bool normalized) {
 	auto resource = std::make_shared<TextureResource>();
-	resource->create(width, height);
+	resource->create(width, height, normalized);
 	return resource;
 }
 
@@ -136,6 +154,27 @@ std::shared_ptr<TextureResource> TextureCache::loadTxa(const std::string &path, 
 	if (iter == cache_.end()) {
 		auto resource = std::make_shared<TextureResource>();
 		resource->loadTxa(path, archive, tex);
+		if (cache_.size() > 100) {
+			for (auto iter = cache_.cbegin(); iter != cache_.cend();) {
+				if (iter->second.use_count() == 1) {
+					cache_.erase(iter++);
+				} else {
+					++iter;
+				}
+			}
+		}
+		cache_.insert({ identifier, resource });
+		return resource;
+	}
+	return iter->second;
+}
+
+std::shared_ptr<TextureResource> TextureCache::loadMsk(const std::string &path, Archive &archive, bool normalized) {
+	auto identifier = path;
+	auto iter = cache_.find(identifier);
+	if (iter == cache_.end()) {
+		auto resource = std::make_shared<TextureResource>();
+		resource->loadMsk(path, archive, normalized);
 		if (cache_.size() > 100) {
 			for (auto iter = cache_.cbegin(); iter != cache_.cend();) {
 				if (iter->second.use_count() == 1) {

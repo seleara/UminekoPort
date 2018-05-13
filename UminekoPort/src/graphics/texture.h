@@ -15,24 +15,28 @@ public:
 	~TextureResource() {
 		glDeleteTextures(1, &texture_);
 	}
-	void create(int width, int height);
+	void create(int width, int height, bool normalized = false);
 	void load(const std::string &path, Archive &archive);
 	void loadBup(const std::string &path, Archive &archive, const std::string &pose);
 	void loadTxa(const std::string &path, Archive &archive, const std::string &tex);
+	void loadMsk(const std::string &path, Archive &archive, bool normalized = false);
 private:
 	friend class TextureWrapper;
+	friend class Framebuffer;
 	friend class GraphicsContext;
 
+	bool normalized_ = false;
 	GLuint texture_;
 	glm::ivec2 size_;
 };
 
 class TextureCache {
 public:
-	static std::shared_ptr<TextureResource> create(int width, int height);
+	static std::shared_ptr<TextureResource> create(int width, int height, bool normalized=false);
 	static std::shared_ptr<TextureResource> load(const std::string &path, Archive &archive);
 	static std::shared_ptr<TextureResource> loadBup(const std::string &path, Archive &archive, const std::string &pose);
 	static std::shared_ptr<TextureResource> loadTxa(const std::string &path, Archive &archive, const std::string &tex);
+	static std::shared_ptr<TextureResource> loadMsk(const std::string &path, Archive &archive, bool normalized = false);
 private:
 	//static std::set<std::string> cacheCounter_;
 	static std::map<std::string, std::shared_ptr<TextureResource>> cache_;
@@ -47,8 +51,8 @@ public:
 	//	resource_ = std::make_shared<TextureResource>();
 	//}
 
-	void create(int width, int height) {
-		resource_ = TextureCache::create(width, height);
+	void create(int width, int height, bool normalized = false) {
+		resource_ = TextureCache::create(width, height, normalized);
 	}
 	
 	void load(const std::string &path, Archive &archive) {
@@ -60,11 +64,16 @@ public:
 	void loadTxa(const std::string &path, Archive &archive, const std::string &tex) {
 		resource_ = TextureCache::loadTxa(path, archive, tex);
 	}
+	void loadMsk(const std::string &path, Archive &archive, bool normalized = false) {
+		resource_ = TextureCache::loadMsk(path, archive, normalized);
+	}
 	void bind() {
-		glBindTexture(GL_TEXTURE_RECTANGLE, id());
+		auto glEnum = normalized() ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE;
+		glBindTexture(glEnum, id());
 	}
 	void release() {
-		glBindTexture(GL_TEXTURE_RECTANGLE, 0);
+		auto glEnum = normalized() ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE;
+		glBindTexture(glEnum, 0);
 	}
 	GLuint id() const {
 		if (!resource_)
@@ -81,7 +90,14 @@ public:
 		if (resource_) return true;
 		return false;
 	}
+
+	bool normalized() const {
+		if (!resource_)
+			return false;
+		return resource_->normalized_;
+	}
 private:
+	friend class Framebuffer;
 	friend class GraphicsContext;
 
 	std::shared_ptr<TextureResource> resource_;
