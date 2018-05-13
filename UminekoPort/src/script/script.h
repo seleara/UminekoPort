@@ -53,9 +53,11 @@ enum class ImageType {
 	Sprite = 3
 };
 
+class AudioManager;
+
 class Script {
 public:
-	Script(GraphicsContext &ctx, bool commandTest=false);
+	Script(GraphicsContext &ctx, AudioManager &audio, bool commandTest=false);
 	void load(const std::string &path, Archive &archive);
 	void pause() {
 		if (commandTest_) return;
@@ -89,6 +91,7 @@ private:
 	std::atomic<bool> paused_;
 	std::atomic<bool> stopped_;
 	GraphicsContext &ctx_;
+	AudioManager &audio_;
 	std::vector<MaskEntry> masks_;
 	std::vector<SpriteEntry> sprites_;
 	std::vector<CgEntry> cgs_;
@@ -318,27 +321,14 @@ private:
 		auto content = readString8(br);
 	}
 	void command8D(BinaryReader &br, Archive &archive);
-	void command9C(BinaryReader &br, Archive &archive) {
-		//br.skip(4);
-		auto unk = br.read<uint32_t>();
-		/*if (unk == 0x05) {
-			br.skip(6);
-		} else if (unk == 0x03 || unk == 0x04 || unk == 0x0e) {
-			br.skip(7);
-		} else {
-			br.skip(0);
-		}*/
-		auto unk2 = br.read<uint32_t>(); // B4 00 00 00 - Command Byte?
-	}
+	void command9C(BinaryReader &br, Archive &archive);
 	void command9D(BinaryReader &br, Archive &archive) {
 		br.skip(2);
 	}
 	void command9E(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}
-	void commandA0_umi(BinaryReader &br, Archive &archive) {
-		br.skip(10);
-	}
+	void commandA0_umi(BinaryReader &br, Archive &archive);
 	void commandA0_higu(BinaryReader &br, Archive &archive) {
 		// same as umi B0?
 		commandB0(br, archive);

@@ -132,6 +132,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\audio\atrac3.cc" />
+    <ClCompile Include="src\audio\audiomanager.cc" />
+    <ClCompile Include="src\audio\audiostream.cc" />
     <ClCompile Include="src\data\archive.cc" />
     <ClCompile Include="src\engine\engine.cc" />
     <ClCompile Include="src\engine\graphicscontext.cc" />

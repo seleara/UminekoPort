@@ -5,10 +5,11 @@
 
 #include "../engine/engine.h"
 #include "../util/binaryreader.h"
+#include "../audio/audio.h"
 
 #include "scriptdecompiler.h"
 
-Script::Script(GraphicsContext &ctx, bool commandTest) : ctx_(ctx), commandTest_(commandTest), sd_(*this) {
+Script::Script(GraphicsContext &ctx, AudioManager &audio, bool commandTest) : ctx_(ctx), audio_(audio), commandTest_(commandTest), sd_(*this) {
 	commands_.resize(0x100, nullptr);
 	commands_[0x41] = &Script::command41;
 	commands_[0x42] = &Script::command42;
@@ -197,6 +198,31 @@ void Script::command8D(BinaryReader &br, Archive &archive) {
 	if (unknown != 0)
 		br.skip(2);
 	ctx_.applyLayers();
+}
+
+void Script::command9C(BinaryReader &br, Archive &archive) {
+	//br.skip(4);
+	auto bgmId = getVariable(br.read<uint16_t>());
+	auto unk1 = br.read<uint16_t>();
+	/*if (unk == 0x05) {
+	br.skip(6);
+	} else if (unk == 0x03 || unk == 0x04 || unk == 0x0e) {
+	br.skip(7);
+	} else {
+	br.skip(0);
+	}*/
+	auto volume = br.read<uint32_t>(); // B4 00 00 00 - volume?
+
+	audio_.playBGM("bgm/" + std::string(bgms_[bgmId].name) + ".at3", volume / 255.0f);
+}
+
+void Script::commandA0_umi(BinaryReader &br, Archive &archive) {
+	auto channel = br.read<uint16_t>();
+	auto seId = br.read<uint16_t>();
+	auto unk = br.read<uint16_t>();
+	auto volume = br.read<uint32_t>();
+
+	audio_.playSE(channel, "se/" + std::string(ses_[seId].name) + ".at3", volume / 255.0f);
 }
 
 void Script::displayImage(BinaryReader &br, Archive &archive) {

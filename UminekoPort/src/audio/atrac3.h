@@ -1,47 +1,75 @@
 #pragma once
 
-#include <cstdint>
+#include <string>
+#include <vector>
 
-struct GainInfo {
-	int32_t numGainData;
-	int32_t levcode[8];
-	int32_t loccode[8];
-};
+#include "audio.h"
 
-struct GainBlock {
-	GainInfo block[4];
-};
+class Archive;
 
-struct TonalComponent {
-	int32_t position;
-	int32_t numCoefficients;
-	float coefficient[8];
-};
+class AT3File {
+public:
+	AT3File();
+	~AT3File();
 
-struct ChannelUnit {
-	int32_t bandsCoded;
-	int32_t numComponents;
-	TonalComponent components[64];
-	float previousFrame[1024];
-	int32_t gcBlockSwitch;
-	GainBlock gainBlock[2];
+	void load(const std::string &filename, Archive &archive);
 
-	float spectrum[1024]; // DECLARE_ALIGNED 32
-	float IMDCT_buf[1024]; // DECLARE_ALIGNED 32
+	void rewind() {
 
-	float delayBuf1[46];
-	float delayBuf2[46];
-	float delayBuf3[46];
-};
+	}
 
-struct GetBitContext {
-	const uint8_t *buffer;
-	const uint8_t *bufferEnd;
-	int32_t index;
-	int32_t sizeInBits;
-	int32_t sizeInBitsPlus8;
-};
+	void seek(double seconds) {
 
-struct Atrac3Context {
+	}
 
+	void setLooping(bool looping) {
+
+	}
+
+	int sampleRate() const {
+		return sampleRate_;
+	}
+
+	int channels() const {
+		return channels_;
+	}
+
+	bool nextSamples(std::vector<int16_t> &buffer, uint32_t &samplesNeeded);
+private:
+	friend class AudioManager;
+
+	static int readBuffer(void *opaque, uint8_t *buf, int bufSize) {
+		AT3File *at3 = (AT3File *)opaque;
+
+		bufSize = FFMIN(bufSize, at3->dataRemaining_);
+		if (!bufSize) {
+			return AVERROR_EOF;
+		}
+
+		memcpy(buf, at3->data_.data() + at3->dataOffset_, bufSize);
+		at3->dataOffset_ += bufSize;
+		at3->dataRemaining_ -= bufSize;
+
+		return bufSize;
+	}
+
+	unsigned char *avData_;
+	uint32_t dataOffset_ = 0, dataRemaining_ = 0;
+
+	std::vector<unsigned char> data_;
+
+	int channels_ = 0;
+	int sampleRate_ = 0;
+
+	AudioManager *manager_;
+
+	AVCodec *codec_;
+	AVCodecContext *context_;
+	AVFormatContext *format_;
+	AVIOContext *avio_;
+	AVStream *stream_;
+	SwrContext *swr_;
+
+	AVPacket avpkt;
+	AVFrame *decoded_frame = NULL;
 };

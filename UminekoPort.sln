@@ -4,23 +4,52 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.27004.2002
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UminekoPort", "UminekoPort\UminekoPort.vcxproj", "{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C5405AC2-F674-3219-BF16-D0D024A71495} = {C5405AC2-F674-3219-BF16-D0D024A71495}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsoundio_shared", "libraries\libsoundio\build-win64\libsoundio_shared.vcxproj", "{C5405AC2-F674-3219-BF16-D0D024A71495}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		MinSizeRel|x64 = MinSizeRel|x64
+		MinSizeRel|x86 = MinSizeRel|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		RelWithDebInfo|x64 = RelWithDebInfo|x64
+		RelWithDebInfo|x86 = RelWithDebInfo|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.Debug|x64.ActiveCfg = Debug|x64
 		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.Debug|x64.Build.0 = Debug|x64
 		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.Debug|x86.ActiveCfg = Debug|Win32
 		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.Debug|x86.Build.0 = Debug|Win32
+		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.MinSizeRel|x64.ActiveCfg = Release|x64
+		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.MinSizeRel|x64.Build.0 = Release|x64
+		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.MinSizeRel|x86.ActiveCfg = Release|Win32
+		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.MinSizeRel|x86.Build.0 = Release|Win32
 		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.Release|x64.ActiveCfg = Release|x64
 		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.Release|x64.Build.0 = Release|x64
 		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.Release|x86.ActiveCfg = Release|Win32
 		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.Release|x86.Build.0 = Release|Win32
+		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.RelWithDebInfo|x64.ActiveCfg = Release|x64
+		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.RelWithDebInfo|x64.Build.0 = Release|x64
+		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.RelWithDebInfo|x86.ActiveCfg = Release|Win32
+		{C41FC94D-4DFA-43E8-B783-0EF0D094B3AF}.RelWithDebInfo|x86.Build.0 = Release|Win32
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.Debug|x64.ActiveCfg = Debug|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.Debug|x64.Build.0 = Debug|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.Debug|x86.ActiveCfg = Debug|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.MinSizeRel|x86.ActiveCfg = MinSizeRel|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.Release|x64.ActiveCfg = Release|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.Release|x64.Build.0 = Release|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.Release|x86.ActiveCfg = Release|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{C5405AC2-F674-3219-BF16-D0D024A71495}.RelWithDebInfo|x86.ActiveCfg = RelWithDebInfo|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

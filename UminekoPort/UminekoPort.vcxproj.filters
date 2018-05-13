@@ -60,6 +60,15 @@
     <ClCompile Include="src\engine\graphicscontext.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\audio\audiostream.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\audio\audiomanager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\audio\atrac3.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\engine.h">
@@ -119,9 +128,6 @@
     <ClInclude Include="src\window\input.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\audio\atrac3.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\audio\audio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -138,6 +144,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\graphics\framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\audio\atrac3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

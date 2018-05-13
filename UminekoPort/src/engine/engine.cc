@@ -6,6 +6,7 @@
 #include "../graphics/shader.h"
 #include "../graphics/uniformbuffer.h"
 #include "../math/time.h"
+#include "../audio/audio.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -39,7 +40,9 @@ void Engine::run() {
 	mvp2d->projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f);
 	mvp2d.update();
 
-	Script script(ctx, false);
+	AudioManager audio(arc);
+
+	Script script(ctx, audio, false);
 	std::thread scriptThread([&]() {
 		script.load("main.snr", arc);
 	});

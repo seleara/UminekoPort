@@ -158,10 +158,10 @@ void GraphicsContext::render() {
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	auto x2 = 1920.0f; // window_.fboSize().x;
-	auto y2 = 1080.0f; // window_.fboSize().y;
-	auto tx2 = 1.0f; // window_.fboSize().x;
-	auto ty2 = 1.0f; // window_.fboSize().y;
+	auto x2 = 1920.0f;
+	auto y2 = 1080.0f;
+	auto tx2 = 1.0f;
+	auto ty2 = 1.0f;
 	float vertices[] = {
 		0.0f, 0.0f, 0.0f, ty2, 1.0f, 1.0f, 1.0f, 1.0f,
 		0.0f, y2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
