@@ -15,11 +15,13 @@ public:
 	~TextureResource() {
 		glDeleteTextures(1, &texture_);
 	}
+	void create(int width, int height);
 	void load(const std::string &path, Archive &archive);
 	void loadBup(const std::string &path, Archive &archive, const std::string &pose);
 	void loadTxa(const std::string &path, Archive &archive, const std::string &tex);
 private:
 	friend class TextureWrapper;
+	friend class GraphicsContext;
 
 	GLuint texture_;
 	glm::ivec2 size_;
@@ -27,6 +29,7 @@ private:
 
 class TextureCache {
 public:
+	static std::shared_ptr<TextureResource> create(int width, int height);
 	static std::shared_ptr<TextureResource> load(const std::string &path, Archive &archive);
 	static std::shared_ptr<TextureResource> loadBup(const std::string &path, Archive &archive, const std::string &pose);
 	static std::shared_ptr<TextureResource> loadTxa(const std::string &path, Archive &archive, const std::string &tex);
@@ -38,6 +41,14 @@ private:
 class TextureWrapper {
 public:
 	TextureWrapper() {
+	}
+
+	//void createEmpty() {
+	//	resource_ = std::make_shared<TextureResource>();
+	//}
+
+	void create(int width, int height) {
+		resource_ = TextureCache::create(width, height);
 	}
 	
 	void load(const std::string &path, Archive &archive) {
@@ -71,6 +82,8 @@ public:
 		return false;
 	}
 private:
+	friend class GraphicsContext;
+
 	std::shared_ptr<TextureResource> resource_;
 };
 

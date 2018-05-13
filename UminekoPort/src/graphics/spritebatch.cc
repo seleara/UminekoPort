@@ -19,11 +19,11 @@ void SpriteBatch::clear() {
 	sprites_.clear();
 }
 
-void SpriteBatch::render() {
+void SpriteBatch::render(const std::string &shaderName) {
 	if (sprites_.size() == 0) return;
 	auto textures = upload();
 	Shader shader;
-	shader.loadCache("2d");
+	shader.loadCache(shaderName);
 
 	//std::cout << textures.size() << std::endl;
 

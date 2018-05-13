@@ -20,9 +20,9 @@ std::vector<std::string> ScriptDecompiler::functionNames_ = {
 	"command_60", "command_61", "command_62", "command_63", "command_64", "command_65", "command_66", "command_67", "command_68", "command_69", "command_6A", "command_6B", "command_6C", "command_6D", "command_6E", "command_6F",
 	"command_70", "command_71", "command_72", "command_73", "command_74", "command_75", "command_76", "command_77", "command_78", "command_79", "command_7A", "command_7B", "command_7C", "command_7D", "command_7E", "command_7F",
 	"unlock_content", "command_81", "command_82", "wait", "command_84", "command_85", "display_text", "wait_msg_advance", "return_to_message", "hide_text", "command_8A", "command_8B", "show_choices", "do_transition", "command_8E", "command_8F",
-	"command_90", "command_91", "command_92", "command_93", "command_94", "command_95", "command_96", "command_97", "command_98", "command_99", "command_9A", "command_9B", "command_9C", "command_9D", "command_9E", "command_9F",
-	"command_A0", "command_A1", "command_A2", "command_A3", "command_A4", "command_A5", "command_A6", "command_A7", "command_A8", "command_A9", "command_AA", "command_AB", "command_AC", "command_AD", "command_AE", "command_AF",
-	"command_B0", "play_movie", "command_B2", "movie_related_B3", "movie_related_B4", "command_B5", "command_B6", "command_B7", "command_B8", "command_B9", "command_BA", "command_BB", "command_BC", "command_BD", "unlock_trophy", "command_BF",
+	"command_90", "command_91", "command_92", "command_93", "command_94", "command_95", "command_96", "command_97", "command_98", "command_99", "command_9A", "command_9B", "play_bgm", "stop_bgm", "command_9E", "command_9F",
+	"play_se", "stop_se", "stop_all_se", "set_se_volume", "command_A4", "command_A5", "rumble", "command_A7", "command_A8", "command_A9", "command_AA", "command_AB", "command_AC", "command_AD", "command_AE", "command_AF",
+	"set_title", "play_movie", "movie_related_B2", "movie_related_B3", "movie_related_B4", "command_B5", "autosave", "command_B7", "command_B8", "command_B9", "command_BA", "command_BB", "command_BC", "command_BD", "unlock_trophy", "command_BF",
 	"command_C0", "display_image", "set_layer_property", "command_C3", "command_C4", "command_C5", "command_C6", "command_C7", "command_C8", "command_C9", "command_CA", "command_CB", "command_CC", "command_CD", "command_CE", "command_CF",
 	"command_D0", "command_D1", "command_D2", "command_D3", "command_D4", "command_D5", "command_D6", "command_D7", "command_D8", "command_D9", "command_DA", "command_DB", "command_DC", "command_DD", "command_DE", "command_DF",
 	"command_E0", "command_E1", "command_E2", "command_E3", "command_E4", "command_E5", "command_E6", "command_E7", "command_E8", "command_E9", "command_EA", "command_EB", "command_EC", "command_ED", "command_EE", "command_EF",
@@ -39,7 +39,8 @@ void ScriptDecompiler::setup() {
 	for (auto &cmd : commands_) {
 		cmd.opcode = -1;
 	}
-	commands_[0x40] = { 0x40, { arg(SDType::Bytes, 3) } }; // ???
+	commands_[0x3D] = { 0x3D, { arg(SDType::Bytes, 6) } }; // ???
+	//commands_[0x40] = { 0x40, { arg(SDType::Bytes, 3) } }; // ???
 	commands_[0x41] = { 0x41, {} }; // special case
 	commands_[0x42] = { 0x42, { arg(SDType::UInt16), arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::Bytes, 2) } };
 	commands_[0x43] = { 0x43, { arg(SDType::UInt8), arg(SDType::UInt16), arg(SDType::Int16) } };
@@ -68,19 +69,20 @@ void ScriptDecompiler::setup() {
 		commands_[0x8E] = { 0x8E, { arg(SDType::Bytes, 1) } };
 	commands_[0x91] = { 0x91, { arg(SDType::Bytes, 2) } };
 	commands_[0x97] = { 0x97, { arg(SDType::Bytes, 2) } };
-	commands_[0x9C] = { 0x9C, { arg(SDType::UInt32), arg(SDType::UInt32) } };
-	commands_[0x9D] = { 0x9D, { arg(SDType::Bytes, 2) } };
+	commands_[0x9C] = { 0x9C, { arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::UInt32) } }; // special case
+	commands_[0x9D] = { 0x9D, { arg(SDType::UInt16) } };
 	commands_[0x9E] = { 0x9E, { arg(SDType::Bytes, 4) } };
 	commands_[0xA0] = { 0xA0, { arg(SDType::Bytes, 10) } }; // special case?
-	commands_[0xA1] = { 0xA1, { arg(SDType::Bytes, 4) } };
-	commands_[0xA2] = { 0xA2, { arg(SDType::Bytes, 2) } };
-	commands_[0xA3] = { 0xA3, { arg(SDType::Bytes, 6) } };
-	commands_[0xA4] = { 0xA4, { arg(SDType::Bytes, 7) } };
+	commands_[0xA1] = { 0xA1, { arg(SDType::UInt16), arg(SDType::UInt16) } }; // channel, frames
+	commands_[0xA2] = { 0xA2, { arg(SDType::UInt16) } }; // frames
+	commands_[0xA3] = { 0xA3, { arg(SDType::UInt16), arg(SDType::Bytes, 4) } };
+	commands_[0xA4] = { 0xA4, { arg(SDType::Bytes, 4) } };
 	commands_[0xA6] = { 0xA6, { arg(SDType::Bytes, 4) } };
 	commands_[0xAE] = { 0xAE, { arg(SDType::Bytes, 2) } };
 	commands_[0xAF] = { 0xAF, { arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::Bytes, 2) } };
-	commands_[0xB0] = { 0xB0, { arg(SDType::Bytes, 2), arg(SDType::String8) } };
+	commands_[0xB0] = { 0xB0, { arg(SDType::UInt16), arg(SDType::String8) } }; // special case
 	commands_[0xB1] = { 0xB1, { arg(SDType::UInt16) } };
+	commands_[0xB2] = { 0xB2, { arg(SDType::UInt16) } };
 	commands_[0xB3] = { 0xB3, {} };
 	commands_[0xB4] = { 0xB4, {} };
 	commands_[0xB6] = { 0xB6, {} };
@@ -114,7 +116,9 @@ void ScriptDecompiler::setup() {
 	//	specialCases_[0x80] = &ScriptDecompiler::command_80;
 	specialCases_[0x83] = &ScriptDecompiler::command_83;
 	specialCases_[0x8D] = &ScriptDecompiler::command_8D;
+	specialCases_[0x9C] = &ScriptDecompiler::command_9C;
 	specialCases_[0xA0] = &ScriptDecompiler::command_A0;
+	specialCases_[0xB0] = &ScriptDecompiler::command_B0;
 	specialCases_[0xB9] = &ScriptDecompiler::command_B9;
 	specialCases_[0xC1] = &ScriptDecompiler::display_image;
 	specialCases_[0xC2] = &ScriptDecompiler::command_C2;
@@ -506,14 +510,22 @@ FuncInfo ScriptDecompiler::command_83(const SDCommand &cmd, BinaryReader &br) co
 
 FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) const {
 	FuncInfo fi;
-	auto next = br.read<uint8_t>();
-	br.skip(-1);
 	std::stringstream ss;
-	ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br) << ", ";
+	uint8_t unknown = 0, unknown2 = 0;
+	if (Engine::game == "chiru") {
+		unknown = br.read<uint8_t>();
+		if (unknown != 0)
+			unknown2 = br.read<uint8_t>();
+	}
+	auto next = br.read<uint8_t>();
 	next &= ~0x80;
-	if (next == 0x02) // simple fade afaik
-		ss << parseArgument(arg(SDType::UInt16), br) << ")"; // time in frames (60fps)
-	else if (next == 0x03) { // specified mask
+	if (next == 0x00) {
+		br.skip(-1);
+		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
+	} else if (next == 0x02) { // simple fade afaik
+		ss << "fade(" << parseArgument(arg(SDType::UInt16), br); // time in frames (60fps)
+	} else if (next == 0x03) { // specified mask
+		ss << "transition_mask(";
 		auto maskId = br.read<uint16_t>();
 		if (isVariable(maskId)) {
 			br.skip(-2);
@@ -521,14 +533,57 @@ FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) co
 		} else {
 			ss << "\"mask/" << std::string(script_.masks_[maskId].name) << ".msk\"";
 		}
-		ss << ", " << parseArgument(arg(SDType::UInt16), br) << ")"; // frames
-	} else if (next == 0x0C) {
-		ss << parseArgument(arg(SDType::UInt16), br);
-		ss << ", " << parseArgument(arg(SDType::UInt16), br) << ")";
-	} else if (next == 0x0E) {
-		ss << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br); // frames
+	} else if (next == 0x07) {
+		br.skip(-1);
+		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
 		ss << ", " << parseArgument(arg(SDType::UInt16), br);
-		ss << ", " << parseArgument(arg(SDType::UInt16), br) << ")";
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	} else if (next == 0x0C) {
+		br.skip(-1);
+		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	} else if (next == 0x0E) {
+		br.skip(-1);
+		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	} else {
+		br.skip(-1);
+		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
+	}
+	if (unknown != 0) {
+		ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
+	}
+	ss << ")";
+	if (unknown != 0) {
+		ss << " // " << (int)unknown << ", " << (int)unknown2;
+	}
+	fi.line = ss.str();
+	return fi;
+}
+
+FuncInfo ScriptDecompiler::command_9C(const SDCommand &cmd, BinaryReader &br) const {
+	FuncInfo fi;
+	std::stringstream ss;
+	ss << getName(cmd.opcode) << "(";
+	auto bgmId = br.read<uint16_t>();
+	bool canGetString = true;
+	if (isVariable(bgmId)) {
+		canGetString = false;
+		br.skip(-2);
+		ss << parseArgument(arg(SDType::UInt16), br);
+	} else {
+		ss << ", \"bgm/" << std::string(script_.bgms_[bgmId].name) << ".at3\"";
+	}
+	ss << ", " << parseArgument(arg(SDType::UInt16), br); // ???
+	ss << ", " << parseArgument(arg(SDType::UInt32), br); // volume?
+	ss << ")";
+	if (canGetString) {
+		ss << " // " << std::string(script_.bgms_[bgmId].title);
 	}
 	fi.line = ss.str();
 	return fi;
@@ -537,15 +592,42 @@ FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) co
 FuncInfo ScriptDecompiler::command_A0(const SDCommand &cmd, BinaryReader &br) const {
 	FuncInfo fi;
 	std::stringstream ss;
-	auto first = br.read<uint16_t>();
-	ss << getName(cmd.opcode) << "(" << first;
+	auto channel = br.read<uint16_t>();
+	ss << getName(cmd.opcode) << "(" << channel;
 	if (script_.version() != 1) {
 		ss << ", " << parseArgument(arg(SDType::String8), br);
 	} else {
-		auto count = br.read<uint8_t>();
-		ss << ", " << (int)count;
-		ss << ", " << parseArgument(arg(SDType::Bytes, 7), br);
+		auto seId = br.read<uint16_t>();
+		if (isVariable(seId)) {
+			br.skip(-2);
+			ss << parseArgument(arg(SDType::UInt16), br);
+		} else {
+			ss << ", \"se/" << std::string(script_.ses_[seId].name) << ".at3\"";
+		}
+		ss << ", " << parseArgument(arg(SDType::UInt16), br); // ???
+		ss << ", " << parseArgument(arg(SDType::UInt32), br); // volume?
 	}
+	ss << ")";
+	fi.line = ss.str();
+	return fi;
+}
+
+FuncInfo ScriptDecompiler::command_B0(const SDCommand &cmd, BinaryReader &br) const {
+	FuncInfo fi;
+	std::stringstream ss;
+	auto line = br.read<uint16_t>();
+	switch (line) {
+	case 0:
+		ss << "set_episode_title(";
+		break;
+	case 1:
+		ss << "set_chapter_title(";
+		break;
+	default:
+		ss << getName(cmd.opcode) << "(" << line << ", ";
+		break;
+	}
+	ss << parseArgument(arg(SDType::String8), br);
 	ss << ")";
 	fi.line = ss.str();
 	return fi;
@@ -594,13 +676,17 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 		spriteId = br.read<uint16_t>();
 		if (type == 3) {
 			ss << ", \"bustup/" << std::string(script_.sprites_[spriteId].name) << ".bup\", \"" << std::string(script_.sprites_[spriteId].pose) << "\"";
+			if (unk3 == 3) {
+				ss << ", " << parseArgument(arg(SDType::UInt16), br);
+			}
 			ss << ") // spriteId = " << spriteId;
 		} else if (type == 2) {
 			ss << ", \"picture/" << std::string(script_.cgs_[spriteId].name) << ".pic\"";
 			ss << ") // cgId = " << spriteId;
 		} else if (type == 4) {
 			// anim?
-			ss << ", \"anime/" << std::string(script_.anims_[spriteId].name) << ".bsf\"";
+			auto animName = Engine::game == "umi" ? std::string(script_.umiAnims_[spriteId].name) : std::string(script_.chiruAnims_[spriteId].name);
+			ss << ", \"anime/" << animName << ".bsf\"";
 			auto animUnknown = br.read<uint16_t>();
 			ss << ", " << animUnknown << ") // animId = " << spriteId;
 		} else if (type == 1) {
@@ -656,6 +742,11 @@ FuncInfo ScriptDecompiler::command_C7(const SDCommand &cmd, BinaryReader &br) co
 	ss << (int)unk2 << ", " << (int)unk3;
 	if (unk2 == 3) {
 		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+	} else if (unk2 == 0) {
+		//ss << ", " << parseArgument(arg(SDType::Bytes, 6), br);
+		if (Engine::game == "chiru") { // why? same script version (presumably)
+			ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
+		}
 	}
 	ss << ")";
 	fi.line = ss.str();

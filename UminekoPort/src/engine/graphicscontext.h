@@ -72,10 +72,12 @@ public:
 	}
 
 	void advance() {
-		done_ = true;
+		if (!done_) {
+			done_ = true;
 
-		// if whole message is done (to be implemented)
-		messages_.pop_front();
+			// if whole message is done (to be implemented)
+			messages_.pop_front();
+		}
 	}
 
 	bool done() const {
@@ -98,19 +100,15 @@ private:
 	bool visible_ = false;
 };
 
+struct ShaderTransition {
+	glm::vec4 progress; // x
+};
+
 class GraphicsContext {
 public:
-	GraphicsContext(Window &window, Archive &archive) : window_(window), archive_(archive) {
-		layers_.resize(0x20);
-		for (auto &layer : layers_) {
-			layer.newProperties.sprite.anchor = Anchor::Bottom;
-			layer.newProperties.sprite.pivot = Pivot::Bottom;
-		}
-		newLayers_.resize(0x20);
-		std::copy(layers_.begin(), layers_.end(), newLayers_.begin());
+	GraphicsContext(Window &window, Archive &archive);
 
-		msg_.init(archive);
-	}
+	void resize();
 
 	void wait(uint32_t frames) {
 		waitTime_ = frames / 60.0;
@@ -124,6 +122,22 @@ public:
 	void stopWait() {
 		waitTime_ = 0.0;
 		waiting_ = false;
+	}
+
+	void transition(uint32_t frames) {
+		isTransitioning_ = true;
+		transitionSpeed_ = frames / 60.0;
+		transitionProgress_ = 0;
+	}
+
+	bool transitionDone() const {
+		return isTransitioning_ && transitionProgress_ >= 1.0;
+	}
+
+	void endTransitionMode() {
+		isTransitioning_ = false;
+		transitionProgress_ = 0;
+		transitionSpeed_ = 0;
 	}
 
 	void pushMessage(const std::string &text) {
@@ -192,47 +206,9 @@ public:
 		}
 	}
 
-	void update() {
-		if (waiting_) {
-			waitTime_ -= Time::deltaTime();
-		}
-	}
+	void update();
 
-	void render() {
-		std::unique_lock<std::mutex> lock(graphicsMutex_);
-		auto updateLayer = [&](GraphicsLayer &layer) {
-			if (layer.dirty) {
-				if (layer.type == GraphicsLayerType::Default) {
-					layer.texture.load(layer.texturePath, archive_);
-				} else if (layer.type == GraphicsLayerType::Bup) {
-					layer.texture.loadBup(layer.texturePath, archive_, layer.bupPose);
-				}
-				layer.dirty = false;
-			}
-			layer.properties = layer.newProperties;
-		};
-		for (auto &layer : newLayers_) {
-			updateLayer(layer);
-		}
-		for (auto &layer : layers_) {
-			updateLayer(layer);
-		}
-		SpriteBatch batch;
-		for (int i = 0; i < layers_.size(); ++i) {
-			auto &layer = layers_[i];
-			if (layer.type != GraphicsLayerType::None && layer.texture.valid()) {
-				layer.properties.sprite.setTexture(layer.texture);
-				layer.properties.transform.position.x = static_cast<float>(layer.properties.offset.x);
-				layer.properties.transform.position.y = static_cast<float>(layer.properties.offset.y);
-				batch.add(layer.properties.sprite, layer.properties.transform);
-			}
-		}
-		if (msg_.visible()) {
-			batch.add(msg_.msgSprite_, msg_.msgTransform_);
-		}
-		lock.unlock();
-		batch.render();
-	}
+	void render();
 private:
 	MessageWindow msg_;
 	std::mutex graphicsMutex_;
@@ -240,6 +216,15 @@ private:
 	std::vector<GraphicsLayer> newLayers_; // new state
 	Window &window_;
 	Archive &archive_;
+
+	bool isTransitioning_ = false;
+	double transitionSpeed_ = 0;
+	double transitionProgress_ = 0;
+
+	//GLuint prevTexture_, nextTexture_;
+	Texture prevTexture_, nextTexture_;
+	GLuint prevFramebuffer_, nextFramebuffer_;
+	GLuint prevDepthRb_, nextDepthRb_;
 
 	bool waiting_ = false;
 	double waitTime_ = 0.0;

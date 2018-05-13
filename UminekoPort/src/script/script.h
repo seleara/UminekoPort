@@ -27,10 +27,25 @@ struct CgEntry {
 	int16_t unknown;
 };
 
-struct AnimEntry {
+struct UmiAnimEntry {
 	char name[0x20];
 	int16_t unknown;
 	int16_t unknown2;
+};
+
+struct ChiruAnimEntry {
+	char name[0x24];
+	int16_t unknown;
+	int16_t unknown2;
+};
+
+struct BGMEntry {
+	char name[0xC];
+	char title[0x28];
+};
+
+struct SEEntry {
+	char name[0x18];
 };
 
 enum class ImageType {
@@ -57,10 +72,17 @@ public:
 	int version() const {
 		return version_;
 	}
+
+	void decompile() {
+		sd_.decompile(path_, data_, scriptOffset_);
+	}
 private:
 	friend class ScriptDecompiler;
 
+	std::string path_;
+	std::vector<unsigned char> data_;
 	int version_ = 0;
+	uint32_t scriptOffset_ = 0;
 
 	ScriptDecompiler sd_;
 
@@ -70,7 +92,10 @@ private:
 	std::vector<MaskEntry> masks_;
 	std::vector<SpriteEntry> sprites_;
 	std::vector<CgEntry> cgs_;
-	std::vector<AnimEntry> anims_;
+	std::vector<UmiAnimEntry> umiAnims_;
+	std::vector<ChiruAnimEntry> chiruAnims_;
+	std::vector<BGMEntry> bgms_;
+	std::vector<SEEntry> ses_;
 	bool commandTest_;
 
 	uint32_t targetOffset_ = 0;
@@ -292,19 +317,7 @@ private:
 		auto header = readString8(br);
 		auto content = readString8(br);
 	}
-	void command8D(BinaryReader &br, Archive &archive) {
-		auto next = br.read<uint8_t>();
-		next &= ~0x80;
-		if (next == 0x02) // fade
-			br.skip(2);
-		else if (next == 0x03) // mask
-			br.skip(4);
-		else if (next == 0x0C)
-			br.skip(4);
-		else if (next == 0x0E)
-			br.skip(6);
-		ctx_.applyLayers();
-	}
+	void command8D(BinaryReader &br, Archive &archive);
 	void command9C(BinaryReader &br, Archive &archive) {
 		//br.skip(4);
 		auto unk = br.read<uint32_t>();
@@ -319,6 +332,9 @@ private:
 	}
 	void command9D(BinaryReader &br, Archive &archive) {
 		br.skip(2);
+	}
+	void command9E(BinaryReader &br, Archive &archive) {
+		br.skip(4);
 	}
 	void commandA0_umi(BinaryReader &br, Archive &archive) {
 		br.skip(10);

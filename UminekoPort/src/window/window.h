@@ -46,10 +46,18 @@ public:
 	void clear(const glm::vec4 &color);
 	void swapBuffers();
 	void setTitle(const std::string &title);
+	const glm::ivec2 fboSize() const {
+		return fboSize_;
+	}
+	void bindFramebuffer() {
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
+	}
 protected:
 	void pushEvent(WindowEvent &&event);
 	bool popEvent(WindowEvent &event);
 private:
+	friend class GraphicsContext;
+
 	std::deque<WindowEvent> eventQueue_;
 	GLFWwindow *window_;
 

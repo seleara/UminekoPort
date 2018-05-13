@@ -30,6 +30,7 @@ Script::Script(GraphicsContext &ctx, bool commandTest) : ctx_(ctx), commandTest_
 	commands_[0x8D] = &Script::command8D;
 	commands_[0x9C] = &Script::command9C;
 	commands_[0x9D] = &Script::command9D;
+	commands_[0x9E] = &Script::command9E;
 	if (Engine::game == "umi" || Engine::game == "chiru")
 		commands_[0xA0] = &Script::commandA0_umi;
 	else
@@ -55,13 +56,14 @@ Script::Script(GraphicsContext &ctx, bool commandTest) : ctx_(ctx), commandTest_
 }
 
 void Script::load(const std::string &path, Archive &archive) {
-	auto data = archive.read(path);
+	path_ = path;
+	data_ = archive.read(path_);
 
-	std::ofstream ofs(path, std::ios_base::binary);
-	ofs.write((char *)data.data(), data.size());
+	std::ofstream ofs(path_, std::ios_base::binary);
+	ofs.write((char *)data_.data(), data_.size());
 	ofs.close();
 
-	BinaryReader br((char *)&data[0], data.size());
+	BinaryReader br((char *)data_.data(), data_.size());
 	auto magic = br.readString(4);
 	if (magic != "SNR ") {
 		throw std::runtime_error("Script file has invalid signature, expected 'SNR '.");
@@ -75,7 +77,7 @@ void Script::load(const std::string &path, Archive &archive) {
 
 	version_ = unknown2;
 
-	auto scriptOffset = br.read<uint32_t>();
+	scriptOffset_ = br.read<uint32_t>();
 
 	// Resource offsets
 	auto maskOffset = br.read<uint32_t>();
@@ -109,17 +111,32 @@ void Script::load(const std::string &path, Archive &archive) {
 
 	br.seekg(animeOffset);
 	auto animCount = br.read<uint32_t>();
-	anims_.resize(animCount);
-	br.read((char *)anims_.data(), animCount * sizeof(AnimEntry));
+	if (Engine::game == "umi") {
+		umiAnims_.resize(animCount);
+		br.read((char *)umiAnims_.data(), animCount * sizeof(UmiAnimEntry));
+	} else if (Engine::game == "chiru") {
+		chiruAnims_.resize(animCount);
+		br.read((char *)chiruAnims_.data(), animCount * sizeof(ChiruAnimEntry));
+	}
+
+	br.seekg(bgmOffset);
+	auto bgmCount = br.read<uint32_t>();
+	bgms_.resize(bgmCount);
+	br.read((char *)bgms_.data(), bgmCount * sizeof(BGMEntry));
+
+	br.seekg(seOffset);
+	auto seCount = br.read<uint32_t>();
+	ses_.resize(seCount);
+	br.read((char *)ses_.data(), seCount * sizeof(SEEntry));
 
 	/*for (const auto &s : sprites_) {
 		std::cout << s.name << "\n";
 	}*/
 
 	sd_.setup();
-	sd_.decompile(path, data, scriptOffset);
+	//sd_.decompile(path, data, scriptOffset);
 
-	br.seekg(scriptOffset);
+	br.seekg(scriptOffset_);
 	while (!stopped_) {
 		executeCommand(br, archive);
 	}
@@ -152,6 +169,34 @@ void Script::executeCommand(BinaryReader &br, Archive &archive) {
 	}
 	//std::cout << "CB 0x" << std::hex << (int)cmd << std::dec << "\n";
 	(this->*cf)(br, archive);
+}
+
+void Script::command8D(BinaryReader &br, Archive &archive) {
+	uint8_t unknown = 0, unknown2 = 0;
+	if (Engine::game == "chiru") {
+		unknown = br.read<uint8_t>();
+		if (unknown != 0)
+			unknown2 = br.read<uint8_t>();
+	}
+	auto next = br.read<uint8_t>();
+	next &= ~0x80;
+	if (next == 0x02) { // fade
+		auto frames = getVariable(br.read<uint16_t>());
+		ctx_.transition(frames);
+		pause();
+	} else if (next == 0x03) { // mask
+		auto maskId = getVariable(br.read<uint16_t>());
+		auto frames = getVariable(br.read<uint16_t>());
+		ctx_.transition(frames);
+		pause();
+	} else if (next == 0x0C)
+		br.skip(4);
+	else if (next == 0x0E)
+		br.skip(6);
+
+	if (unknown != 0)
+		br.skip(2);
+	ctx_.applyLayers();
 }
 
 void Script::displayImage(BinaryReader &br, Archive &archive) {

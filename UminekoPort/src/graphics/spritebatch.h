@@ -13,7 +13,7 @@ class SpriteBatch {
 public:
 	void add(const Sprite &sprite, const Transform &transform);
 	void clear();
-	void render();
+	void render(const std::string &shaderName = "2d");
 	size_t size() const {
 		return sprites_.size();
 	}

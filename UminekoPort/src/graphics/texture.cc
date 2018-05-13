@@ -5,6 +5,18 @@
 //std::set<std::string> TextureCache::cacheCounter_;
 std::map<std::string, std::shared_ptr<TextureResource>> TextureCache::cache_;
 
+void TextureResource::create(int width, int height) {
+	glGenTextures(1, &texture_);
+	glBindTexture(GL_TEXTURE_RECTANGLE, texture_);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	size_.x = width;
+	size_.y = height;
+}
+
 void TextureResource::load(const std::string &path, Archive &archive) {
 	auto pic = archive.getPic(path);
 	glGenTextures(1, &texture_);
@@ -69,6 +81,12 @@ void TextureResource::loadTxa(const std::string &path, Archive &archive, const s
 	glObjectLabel(GL_TEXTURE, texture_, static_cast<GLsizei>(label.size()), label.c_str());
 	size_.x = entry->width;
 	size_.y = entry->height;
+}
+
+std::shared_ptr<TextureResource> TextureCache::create(int width, int height) {
+	auto resource = std::make_shared<TextureResource>();
+	resource->create(width, height);
+	return resource;
 }
 
 std::shared_ptr<TextureResource> TextureCache::load(const std::string &path, Archive &archive) {

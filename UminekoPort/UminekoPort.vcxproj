@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClCompile Include="src\data\archive.cc" />
     <ClCompile Include="src\engine\engine.cc" />
+    <ClCompile Include="src\engine\graphicscontext.cc" />
     <ClCompile Include="src\graphics\mask.cc" />
     <ClCompile Include="src\graphics\shader.cc" />
     <ClCompile Include="src\graphics\spritebatch.cc" />
@@ -176,6 +177,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\2d.glsl" />
+    <None Include="shaders\2d_transition.glsl" />
     <None Include="shaders\common\common2d.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -49,12 +49,18 @@ void Engine::run() {
 	WindowEvent event;
 	while (window.isOpen()) {
 		while (window.pollEvents(event)) {
+			if (event.type == WindowEvent::Type::Resized) {
+				ctx.resize();
+			}
 			if (event.type == WindowEvent::Type::KeyReleased) {
 				if (event.key == KeyCode::S) {
 					skipping = false;
 				}
 				if (event.key == KeyCode::X) {
 					arc.explore();
+				}
+				if (event.key == KeyCode::D) {
+					script.decompile();
 				}
 			}
 			if (skipping) {
@@ -101,6 +107,10 @@ void Engine::run() {
 		if (ctx.waitingDone()) {
 			script.resume();
 			ctx.stopWait();
+		}
+		if (ctx.transitionDone()) {
+			script.resume();
+			ctx.endTransitionMode();
 		}
 
 		window.clear(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));

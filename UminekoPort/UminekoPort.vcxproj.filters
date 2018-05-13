@@ -57,6 +57,9 @@
     <ClCompile Include="src\math\time.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\graphicscontext.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\engine.h">
@@ -138,5 +141,6 @@
   <ItemGroup>
     <None Include="shaders\2d.glsl" />
     <None Include="shaders\common\common2d.glsl" />
+    <None Include="shaders\2d_transition.glsl" />
   </ItemGroup>
 </Project>
