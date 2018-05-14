@@ -65,8 +65,18 @@ void AudioManager::drawDebug() {
 	ImGui::Begin("Audio Manager", &windowOpen);
 
 	ImGui::Text("BGM Fade = %f", bgm_->fadeCoeff_);
+	float masterVol = bgm_->masterVolume();
+	float origVol = masterVol;
+	ImGui::SliderFloat("BGM Volume", &masterVol, 0.0f, 1.0f);
+	if (masterVol != origVol) {
+		bgm_->setMasterVolume(masterVol);
+	}
 
 	ImGui::End();
+}
+
+void AudioManager::setBGMVolume(float volume) {
+	bgm_->setMasterVolume(volume);
 }
 
 void AudioManager::playBGM(const std::string &filename, float volume) {

@@ -41,8 +41,10 @@ public:
 	void callback();
 
 	float volume() const;
+	float masterVolume() const;
 
 	void setVolume(float volume);
+	void setMasterVolume(float volume);
 private:
 	static void writeCallback(SoundIoOutStream *outStream, int frameCountMin, int frameCountMax);
 	void writeCallback_(SoundIoOutStream *outStream, int frameCountMin, int frameCountMax);
@@ -55,6 +57,7 @@ private:
 	bool started_ = false;
 	bool looping_ = false;
 	float volume_ = 1.0f;
+	float masterVolume_ = 1.0f;
 	enum FadeDirection {
 		None,
 		FadeIn,
@@ -77,6 +80,8 @@ public:
 	~AudioManager();
 
 	void drawDebug();
+
+	void setBGMVolume(float volume);
 
 	void playBGM(const std::string &filename, float volume);
 	void stopBGM(int frames);

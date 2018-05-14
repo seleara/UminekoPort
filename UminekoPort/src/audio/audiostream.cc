@@ -24,6 +24,7 @@ void AudioStream::load(std::shared_ptr<AT3File> at3) {
 		outStream->write_callback = &AudioStream::writeCallback;
 		outStream->userdata = this;
 		outStream->sample_rate = 48000; //at3->sampleRate();
+		outStream->software_latency = 0.01;
 
 		if ((err = soundio_outstream_open(outStream))) {
 			std::cerr << "Unable to open device: " << soundio_strerror(err) << std::endl;
@@ -34,6 +35,8 @@ void AudioStream::load(std::shared_ptr<AT3File> at3) {
 			std::cerr << "Unable to set channel layout: " << soundio_strerror(outStream->layout_error) << std::endl;
 			return;
 		}
+
+		//soundio_outstream_set_volume(outStream, masterVolume_ * volume_);
 	}
 	//soundio_outstream_pause(outStream, true);
 	//calcsoundio_outstream_clear_buffer(outStream);
@@ -54,6 +57,7 @@ void AudioStream::play() {
 			std::cerr << "Unable to start stream: " << soundio_strerror(err) << std::endl;
 			return;
 		}
+		//soundio_outstream_set_volume(outStream, masterVolume_ * volume_);
 		started_ = true;
 		return;
 	}
@@ -76,6 +80,7 @@ void AudioStream::stop() {
 
 void AudioStream::fadeOut(double seconds) {
 	if (!outStream) return;
+
 	//pause();
 	//soundio_outstream_clear_buffer(outStream);
 	//fadeClock_.reset();
@@ -113,10 +118,22 @@ float AudioStream::volume() const {
 	return volume_;
 }
 
+float AudioStream::masterVolume() const {
+	return masterVolume_;
+}
+
+void AudioStream::setMasterVolume(float volume) {
+	masterVolume_ = volume;
+	if (outStream) {
+		soundio_outstream_set_volume(outStream, masterVolume_);
+	}
+}
+
 void AudioStream::setVolume(float volume) {
 	volume_ = volume;
-	if (outStream && started_)
-		soundio_outstream_clear_buffer(outStream);
+	//if (outStream)// && started_)
+		//soundio_outstream_set_volume(outStream, masterVolume_ * volume_);
+		//soundio_outstream_clear_buffer(outStream);
 }
 
 void AudioStream::writeCallback(SoundIoOutStream *outStream, int frameCountMin, int frameCountMax) {

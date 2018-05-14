@@ -62,6 +62,7 @@ public:
 	Bup getBup(const std::string &path);
 	Pic getPic(const std::string &path);
 	Msk getMsk(const std::string &path);
+	void extractMsk(const std::string &path);
 private:
 	ArchiveEntry &get(const std::string &path);
 	void scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br);

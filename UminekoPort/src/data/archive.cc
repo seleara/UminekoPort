@@ -389,6 +389,9 @@ struct MskHeader {
 
 Txa Archive::getTxa(const std::string &path) {
 	auto &entry = get(path);
+
+	std::lock_guard<std::mutex> lock(mutex_);
+
 	BinaryReader br(ifs_);
 	br.seekg(entry.offset);
 	auto header = br.read<TxaHeader>();
@@ -438,6 +441,9 @@ Txa Archive::getTxa(const std::string &path) {
 
 Pic Archive::getPic(const std::string &path) {
 	auto &entry = get(path);
+
+	std::lock_guard<std::mutex> lock(mutex_);
+
 	BinaryReader br(ifs_);
 	br.seekg(entry.offset);
 
@@ -480,25 +486,85 @@ Pic Archive::getPic(const std::string &path) {
 
 Msk Archive::getMsk(const std::string &path) {
 	auto &entry = get(path);
+
+	std::lock_guard<std::mutex> lock(mutex_);
+
 	BinaryReader br(ifs_);
 	br.seekg(entry.offset);
 
 	auto header = br.read<MskHeader>();
 
 	Msk msk;
-	msk.name = path;
+	msk.name = entry.name;
 	msk.width = header.width;
 	msk.height = header.height;
 	msk.pixels.resize(msk.width * msk.height);
 
 	// just to test the shader
-	for (int i = 0; i < msk.height; ++i) {
+	/*for (int i = 0; i < msk.height; ++i) {
 		for (int j = 0; j < msk.width; ++j) {
 			msk.pixels[i * msk.width + j] = (255.0 / msk.height) * i;
 		}
+	}*/
+
+	struct MskValue {
+		int width;
+		uint16_t val;
+		uint16_t off;
+	};
+
+	//std::vector<MskValue> vals;
+
+	int pixelOff = 0;
+	while (br.tellg() < entry.offset + entry.size) {
+		auto ctrl = br.read<uint8_t>();
+
+		// The bits in ctrl specifies the size of the next 8 values, 1 = uint16, 0 = uint8
+		for (int i = 0; i < 8; ++i) {
+			if (br.tellg() >= entry.offset + entry.size) break;
+			auto bit = (ctrl >> i) & 1;
+			if (bit) {
+				auto bytes = br.read<uint16_t>();
+				int offset = ((bytes >> 8) & 0xff) | (((bytes >> 4) & 0xf) << 8);
+				int count = (bytes & 0xf) + 3;
+				for (int i = 0; i < count; ++i) {
+					msk.pixels[pixelOff] = msk.pixels[pixelOff - offset - 1];
+					++pixelOff;
+				}
+			} else {
+				//vals.push_back({ 1, br.read<uint8_t>() });
+				msk.pixels[pixelOff++] = br.read<uint8_t>();
+			}
+		}
 	}
 
+	/*for (int vi = 0; vi < vals.size(); ++vi) {
+		const auto &val = vals[vi];
+		if (val.width == 1) {
+			msk.pixels[pixelOff++] = static_cast<uint8_t>(val.val & 0xff);
+		} else {
+			for (int i = 0; i < val.val + 3; ++i) {
+				msk.pixels[pixelOff] = msk.pixels[pixelOff - val.off - 1];
+				++pixelOff;
+			}
+		}
+	}*/
+
 	return msk;
+}
+
+void Archive::extractMsk(const std::string &path) {
+	auto msk = getMsk(path);
+	std::vector<unsigned char> expandedPixels(msk.width * msk.height * 4);
+	for (int i = 0; i < msk.height; ++i) {
+		for (int j = 0; j < msk.width; ++j) {
+			expandedPixels[i * msk.width * 4 + j * 4 + 0] = msk.pixels[i * msk.width + j];
+			expandedPixels[i * msk.width * 4 + j * 4 + 1] = msk.pixels[i * msk.width + j];
+			expandedPixels[i * msk.width * 4 + j * 4 + 2] = msk.pixels[i * msk.width + j];
+			expandedPixels[i * msk.width * 4 + j * 4 + 3] = 0xff;
+		}
+	}
+	writeImage(msk.name + "_test.png", expandedPixels.data(), msk.width, msk.height, 4 * msk.width);
 }
 
 void Archive::extractPic(ArchiveEntry &entry) {
@@ -543,6 +609,9 @@ void Archive::extractPic(ArchiveEntry &entry) {
 
 Bup Archive::getBup(const std::string &path) {
 	auto &entry = get(path);
+
+	std::lock_guard<std::mutex> lock(mutex_);
+
 	BinaryReader br(ifs_);
 	br.seekg(entry.offset);
 	auto header = br.read<BupHeader>();
