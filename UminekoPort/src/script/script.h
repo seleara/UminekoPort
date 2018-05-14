@@ -322,23 +322,20 @@ private:
 	}
 	void command8D(BinaryReader &br, Archive &archive);
 	void command9C(BinaryReader &br, Archive &archive);
-	void command9D(BinaryReader &br, Archive &archive) {
-		br.skip(2);
-	}
+	void command9D(BinaryReader &br, Archive &archive);
 	void command9E(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}
+	// play_se(channel:u16, unk:u16, volume:u32)
 	void commandA0_umi(BinaryReader &br, Archive &archive);
 	void commandA0_higu(BinaryReader &br, Archive &archive) {
 		// same as umi B0?
 		commandB0(br, archive);
 	}
-	void commandA1(BinaryReader &br, Archive &archive) {
-		br.skip(4);
-	}
-	void commandA2(BinaryReader &br, Archive &archive) {
-		br.skip(2);
-	}
+	// stop_se(channel:u16, frames:u16)
+	void commandA1(BinaryReader &br, Archive &archive);
+	// stop_all_se(frames:u16)
+	void commandA2(BinaryReader &br, Archive &archive);
 	void commandA3(BinaryReader &br, Archive &archive) {
 		br.skip(6);
 	}

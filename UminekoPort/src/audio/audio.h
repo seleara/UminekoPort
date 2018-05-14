@@ -11,6 +11,7 @@ extern "C" {
 }
 #include <soundio/soundio.h>
 
+#include "../math/clock.h"
 #include "../data/archive.h"
 
 class AT3File;
@@ -27,6 +28,7 @@ public:
 
 	// Same as pause, but start over from the first sample upon resuming
 	void stop();
+	void fadeOut(double seconds);
 
 	void seek(double seconds);
 
@@ -53,6 +55,13 @@ private:
 	bool started_ = false;
 	bool looping_ = false;
 	float volume_ = 1.0f;
+	enum FadeDirection {
+		None,
+		FadeIn,
+		FadeOut
+	} fadeDir_;
+	float fadeCoeff_ = 1.0f;
+	Clock fadeClock_;
 	//std::unique_ptr<int16_t> buffer_; // Used in writeCallback_ to store samples. Made into a member variable to avoid malloc/free in the callback
 	std::vector<int16_t> buffer_;
 
@@ -67,8 +76,13 @@ public:
 	AudioManager(Archive &archive);
 	~AudioManager();
 
+	void drawDebug();
+
 	void playBGM(const std::string &filename, float volume);
+	void stopBGM(int frames);
 	void playSE(int channel, const std::string &filename, float volume);
+	void stopSE(int channel, int frames);
+	void stopAllSE(int frames);
 
 private:
 	friend class AT3File;

@@ -33,6 +33,36 @@ void TextureResource::load(const std::string &path, Archive &archive) {
 	size_.y = pic.height;
 }
 
+void TextureResource::load(const char *pixels, int width, int height, int bpp, bool normalized) {
+	normalized_ = normalized;
+	glGenTextures(1, &texture_);
+	auto texEnum = normalized_ ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE;
+	glBindTexture(texEnum, texture_);
+	glTexParameteri(texEnum, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(texEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(texEnum, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(texEnum, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	GLenum internalFormat, format;
+	switch (bpp) {
+	case 1: {
+		internalFormat = GL_RED;
+		format = GL_RED;
+		GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_RED };
+		glTexParameteriv(texEnum, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+		break;
+	}
+	case 4:
+		internalFormat = GL_RGBA;
+		format = GL_BGRA;
+		break;
+	default:
+		throw std::runtime_error("Unsupported BPP value.");
+	}
+	glTexImage2D(texEnum, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, pixels);
+	size_.x = width;
+	size_.y = height;
+}
+
 void TextureResource::loadBup(const std::string &path, Archive &archive, const std::string &pose) {
 	auto bup = archive.getBup(path);
 	const Bup::SubEntry *entry = nullptr;
@@ -125,6 +155,12 @@ std::shared_ptr<TextureResource> TextureCache::load(const std::string &path, Arc
 		return resource;
 	}
 	return iter->second;
+}
+
+std::shared_ptr<TextureResource> TextureCache::load(const char *pixels, int width, int height, int bpp, bool normalized) {
+	auto resource = std::make_shared<TextureResource>();
+	resource->load(pixels, width, height, bpp, normalized);
+	return resource;
 }
 
 std::shared_ptr<TextureResource> TextureCache::loadBup(const std::string &path, Archive &archive, const std::string &pose) {

@@ -7,6 +7,7 @@
 #include "../graphics/uniformbuffer.h"
 #include "../math/time.h"
 #include "../audio/audio.h"
+#include "../imgui/glimgui.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -118,6 +119,12 @@ void Engine::run() {
 
 		window.clear(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		ctx.render();
+
+		ImGui_ImplGlfwGL3_NewFrame();
+		audio.drawDebug();
+		ImGui::Render();
+		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+
 		window.swapBuffers();
 	}
 

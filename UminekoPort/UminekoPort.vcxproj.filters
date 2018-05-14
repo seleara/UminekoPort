@@ -69,6 +69,15 @@
     <ClCompile Include="src\audio\atrac3.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\imgui\glimgui.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libraries\imgui\imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libraries\imgui\imgui_draw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\engine.h">
@@ -147,6 +156,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\audio\atrac3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\glimgui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

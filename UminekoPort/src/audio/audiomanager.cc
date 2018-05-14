@@ -5,6 +5,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <imgui/imgui.h>
+
 AudioManager::AudioManager(Archive &archive) : archive_(archive) {
 	bgm_ = std::make_unique<AudioStream>();
 	bgm_->manager_ = this;
@@ -58,6 +60,15 @@ AudioManager::~AudioManager() {
 	soundio_destroy(soundio_);
 }
 
+void AudioManager::drawDebug() {
+	static bool windowOpen = true;
+	ImGui::Begin("Audio Manager", &windowOpen);
+
+	ImGui::Text("BGM Fade = %f", bgm_->fadeCoeff_);
+
+	ImGui::End();
+}
+
 void AudioManager::playBGM(const std::string &filename, float volume) {
 	auto at3file = std::make_shared<AT3File>();
 	at3file->manager_ = this;
@@ -69,6 +80,10 @@ void AudioManager::playBGM(const std::string &filename, float volume) {
 	bgm_->play();
 }
 
+void AudioManager::stopBGM(int frames) {
+	bgm_->fadeOut(frames / 60.0);
+}
+
 void AudioManager::playSE(int channel, const std::string &filename, float volume) {
 	auto at3file = std::make_shared<AT3File>();
 	at3file->manager_ = this;
@@ -78,4 +93,15 @@ void AudioManager::playSE(int channel, const std::string &filename, float volume
 
 	ses_[channel]->setVolume(volume);
 	ses_[channel]->play();
+}
+
+void AudioManager::stopSE(int channel, int frames) {
+	ses_[channel]->fadeOut(frames / 60.0);
+}
+
+void AudioManager::stopAllSE(int frames) {
+	double time = frames / 60.0;
+	for (auto &se : ses_) {
+		se->fadeOut(time);
+	}
 }

@@ -132,6 +132,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\libraries\imgui\imgui.cpp" />
+    <ClCompile Include="..\libraries\imgui\imgui_draw.cpp" />
     <ClCompile Include="src\audio\atrac3.cc" />
     <ClCompile Include="src\audio\audiomanager.cc" />
     <ClCompile Include="src\audio\audiostream.cc" />
@@ -143,6 +145,7 @@
     <ClCompile Include="src\graphics\spritebatch.cc" />
     <ClCompile Include="src\graphics\texture.cc" />
     <ClCompile Include="src\graphics\uniformbuffer.cc" />
+    <ClCompile Include="src\imgui\glimgui.cc" />
     <ClCompile Include="src\main.cc" />
     <ClCompile Include="src\math\clock.cc" />
     <ClCompile Include="src\math\time.cc" />
@@ -166,6 +169,7 @@
     <ClInclude Include="src\graphics\spritebatch.h" />
     <ClInclude Include="src\graphics\texture.h" />
     <ClInclude Include="src\graphics\uniformbuffer.h" />
+    <ClInclude Include="src\imgui\glimgui.h" />
     <ClInclude Include="src\math\clock.h" />
     <ClInclude Include="src\math\time.h" />
     <ClInclude Include="src\math\transform.h" />

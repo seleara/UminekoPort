@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "../imgui/glimgui.h"
+
 void Window::create(int width, int height, const std::string &title) {
 	size_.x = width;
 	size_.y = height;
@@ -40,6 +42,8 @@ void Window::create(int width, int height, const std::string &title) {
 
 		throw std::runtime_error((char *)glewGetErrorString(glewErr));
 	}
+
+	ImGui_ImplGlfwGL3_Init(window_, false);
 
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_DEBUG_OUTPUT);
@@ -99,6 +103,7 @@ void Window::swapBuffers() {
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, singlesampleFbo_);
 	//}
 	glDrawBuffer(GL_BACK);                       // Set the back buffer as the draw buffer
+	glClear(GL_COLOR_BUFFER_BIT);
 	auto wx = size_.x / 2.0 - fboSize_.x / 2.0;
 	auto wy = size_.y / 2.0 - fboSize_.y / 2.0;
 	glBlitFramebuffer(0, 0, static_cast<GLint>(fboSize_.x), static_cast<GLint>(fboSize_.y), wx, wy, static_cast<GLint>(wx + fboSize_.x), static_cast<GLint>(wy + fboSize_.y), GL_COLOR_BUFFER_BIT, GL_NEAREST);

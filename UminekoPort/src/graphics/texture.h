@@ -17,6 +17,7 @@ public:
 	}
 	void create(int width, int height, bool normalized = false);
 	void load(const std::string &path, Archive &archive);
+	void load(const char *pixels, int width, int height, int bpp, bool normalized = false);
 	void loadBup(const std::string &path, Archive &archive, const std::string &pose);
 	void loadTxa(const std::string &path, Archive &archive, const std::string &tex);
 	void loadMsk(const std::string &path, Archive &archive, bool normalized = false);
@@ -34,6 +35,7 @@ class TextureCache {
 public:
 	static std::shared_ptr<TextureResource> create(int width, int height, bool normalized=false);
 	static std::shared_ptr<TextureResource> load(const std::string &path, Archive &archive);
+	static std::shared_ptr<TextureResource> load(const char *pixels, int width, int height, int bpp, bool normalized = false);
 	static std::shared_ptr<TextureResource> loadBup(const std::string &path, Archive &archive, const std::string &pose);
 	static std::shared_ptr<TextureResource> loadTxa(const std::string &path, Archive &archive, const std::string &tex);
 	static std::shared_ptr<TextureResource> loadMsk(const std::string &path, Archive &archive, bool normalized = false);
@@ -57,6 +59,9 @@ public:
 	
 	void load(const std::string &path, Archive &archive) {
 		resource_ = TextureCache::load(path, archive);
+	}
+	void load(const char *pixels, int width, int height, int bpp, bool normalized = false) {
+		resource_ = TextureCache::load(pixels, width, height, bpp, normalized);
 	}
 	void loadBup(const std::string &path, Archive &archive, const std::string &pose) {
 		resource_ = TextureCache::loadBup(path, archive, pose);

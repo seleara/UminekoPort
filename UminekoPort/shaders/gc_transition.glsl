@@ -42,7 +42,7 @@ void main() {
 	vec4 next = texture(nextTex, fs_in.texcoord);
 	if (trans.progress.y) {
 		vec4 mask = texture(maskTex, fs_in.texcoord);
-		vec4 val = mix(prev, next, smoothstep(mask.r, 1.0, trans.progress.x));
+		vec4 val = mix(prev, next, smoothstep(1.0 - mask.r, 1.0, trans.progress.x));
 		color = fs_in.color * val;
 	} else {
 		color = fs_in.color * mix(prev, next, trans.progress.x);

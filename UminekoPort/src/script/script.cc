@@ -201,19 +201,17 @@ void Script::command8D(BinaryReader &br, Archive &archive) {
 }
 
 void Script::command9C(BinaryReader &br, Archive &archive) {
-	//br.skip(4);
 	auto bgmId = getVariable(br.read<uint16_t>());
 	auto unk1 = br.read<uint16_t>();
-	/*if (unk == 0x05) {
-	br.skip(6);
-	} else if (unk == 0x03 || unk == 0x04 || unk == 0x0e) {
-	br.skip(7);
-	} else {
-	br.skip(0);
-	}*/
 	auto volume = br.read<uint32_t>(); // B4 00 00 00 - volume?
 
 	audio_.playBGM("bgm/" + std::string(bgms_[bgmId].name) + ".at3", volume / 255.0f);
+}
+
+void Script::command9D(BinaryReader &br, Archive &archive) {
+	auto frames = getVariable(br.read<uint16_t>());
+
+	audio_.stopBGM(frames);
 }
 
 void Script::commandA0_umi(BinaryReader &br, Archive &archive) {
@@ -223,6 +221,20 @@ void Script::commandA0_umi(BinaryReader &br, Archive &archive) {
 	auto volume = br.read<uint32_t>();
 
 	audio_.playSE(channel, "se/" + std::string(ses_[seId].name) + ".at3", volume / 255.0f);
+}
+
+void Script::commandA1(BinaryReader &br, Archive &archive) {
+	auto channel = getVariable(br.read<uint16_t>());
+	auto frames = getVariable(br.read<uint16_t>());
+
+	audio_.stopSE(channel, frames);
+}
+
+// stop_all_se
+void Script::commandA2(BinaryReader &br, Archive &archive) {
+	auto frames = getVariable(br.read<uint16_t>());
+
+	audio_.stopAllSE(frames);
 }
 
 void Script::displayImage(BinaryReader &br, Archive &archive) {

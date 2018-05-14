@@ -13,30 +13,33 @@ AudioStream::~AudioStream() {
 
 void AudioStream::load(std::shared_ptr<AT3File> at3) {
 	int err;
-	outStream = soundio_outstream_create(manager_->device_);
 	if (!outStream) {
-		std::cerr << "Out of memory." << std::endl;
-		return;
+		outStream = soundio_outstream_create(manager_->device_);
+		if (!outStream) {
+			std::cerr << "Out of memory." << std::endl;
+			return;
+		}
+
+		outStream->format = SoundIoFormatS16LE;
+		outStream->write_callback = &AudioStream::writeCallback;
+		outStream->userdata = this;
+		outStream->sample_rate = 48000; //at3->sampleRate();
+
+		if ((err = soundio_outstream_open(outStream))) {
+			std::cerr << "Unable to open device: " << soundio_strerror(err) << std::endl;
+			return;
+		}
+
+		if (outStream->layout_error) {
+			std::cerr << "Unable to set channel layout: " << soundio_strerror(outStream->layout_error) << std::endl;
+			return;
+		}
 	}
-
-	//outStream->format = SoundIoFormatS16BE;
-	outStream->format = SoundIoFormatS16LE;
-	outStream->write_callback = &AudioStream::writeCallback;
-	outStream->userdata = this;
-	outStream->sample_rate = at3->sampleRate();
-
+	//soundio_outstream_pause(outStream, true);
+	//calcsoundio_outstream_clear_buffer(outStream);
+	
 	at3_ = at3;
 	//looping_ = adx_[0]->looping();
-
-	if ((err = soundio_outstream_open(outStream))) {
-		std::cerr << "Unable to open device: " << soundio_strerror(err) << std::endl;
-		return;
-	}
-
-	if (outStream->layout_error) {
-		std::cerr << "Unable to set channel layout: " << soundio_strerror(outStream->layout_error) << std::endl;
-		return;
-	}
 
 	/*if (buffer_)
 	delete[] buffer_;*/
@@ -54,21 +57,34 @@ void AudioStream::play() {
 		started_ = true;
 		return;
 	}
+	fadeCoeff_ = 1.0;
 	soundio_outstream_pause(outStream, false);
 }
 
 void AudioStream::pause() {
+	if (!outStream) return;
 	soundio_outstream_pause(outStream, true);
 }
 
 // Same as pause, but start over from the first sample upon resuming
 void AudioStream::stop() {
+	if (!outStream) return;
 	pause();
 	soundio_outstream_clear_buffer(outStream);
 	at3_->rewind();
 }
 
+void AudioStream::fadeOut(double seconds) {
+	if (!outStream) return;
+	//pause();
+	//soundio_outstream_clear_buffer(outStream);
+	//fadeClock_.reset();
+	fadeDir_ = FadeDirection::FadeOut;
+	//play();
+}
+
 void AudioStream::seek(double seconds) {
+	if (!outStream) return;
 	pause();
 	at3_->seek(seconds);
 	soundio_outstream_clear_buffer(outStream);
@@ -80,6 +96,7 @@ void AudioStream::destroy() {
 }
 
 void AudioStream::setLooping(bool looping) {
+	if (!at3_) return;
 	//looping_ = looping;
 	at3_->setLooping(looping_);
 }
@@ -98,7 +115,7 @@ float AudioStream::volume() const {
 
 void AudioStream::setVolume(float volume) {
 	volume_ = volume;
-	if (started_)
+	if (outStream && started_)
 		soundio_outstream_clear_buffer(outStream);
 }
 
@@ -108,6 +125,9 @@ void AudioStream::writeCallback(SoundIoOutStream *outStream, int frameCountMin, 
 }
 
 void AudioStream::writeCallback_(SoundIoOutStream *outStream, int frameCountMin, int frameCountMax) {
+	if (fadeDir_ == FadeDirection::None && fadeCoeff_ == 0) {
+		return;
+	}
 	SoundIoChannelLayout *layout = &outStream->layout;
 	float sampleRate = static_cast<float>(outStream->sample_rate);
 	float secondsPerFrame = 1.0f / sampleRate;
@@ -159,17 +179,43 @@ void AudioStream::writeCallback_(SoundIoOutStream *outStream, int frameCountMin,
 		for (int frame = 0; frame < frameCount; ++frame) {
 			for (int channel = 0; channel < layout->channel_count; ++channel) {
 				int16_t *ptr = reinterpret_cast<int16_t *>(areas[channel].ptr + areas[channel].step * frame);
-				*ptr = static_cast<int16_t>(buffer_[frame * layout->channel_count + channel] * volume()); // Should rework this to only use the first two channels for stereo, etc. and make an exception for mono ADX files
+				*ptr = static_cast<int16_t>(buffer_[frame * layout->channel_count + channel] * volume() * fadeCoeff_); // Should rework this to only use the first two channels for stereo, etc. and make an exception for mono ADX files
 			}
 
 			if (done) {
 				// ...
+			}
+
+			//double timePassed = fadeClock_.reset();
+			switch (fadeDir_) {
+			case FadeDirection::FadeIn:
+				fadeCoeff_ += 1.0 / outStream->sample_rate;
+				break;
+			case FadeDirection::FadeOut:
+				fadeCoeff_ -= 1.0 / outStream->sample_rate;
+				break;
+			default:
+				break;
+			}
+
+			if (fadeCoeff_ < 0) {
+				fadeCoeff_ = 0;
+				fadeDir_ = FadeDirection::None;
+			} else if (fadeCoeff_ > 1.0) {
+				fadeCoeff_ = 1.0;
+				fadeDir_ = FadeDirection::None;
 			}
 		}
 
 		if ((err = soundio_outstream_end_write(outStream))) {
 			std::cerr << "SoundIO Error: " << soundio_strerror(err) << std::endl;
 			return;
+		}
+
+		if (fadeDir_ == FadeDirection::None && fadeCoeff_ == 0) {
+			//soundio_outstream_pause(outStream, true);
+			//soundio_outstream_clear_buffer(outStream);
+			break;
 		}
 
 		framesLeft -= frameCount;

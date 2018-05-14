@@ -97,6 +97,8 @@ void Archive::explore(ArchiveEntry &folder) {
 
 std::vector<unsigned char> Archive::read(const std::string &path) {
 	auto &entry = get(path);
+
+	std::lock_guard<std::mutex> lock(mutex_);
 	BinaryReader br(ifs_);
 	br.seekg(entry.offset);
 	std::vector<unsigned char> output(entry.size);
@@ -109,6 +111,8 @@ ArchiveEntry &Archive::get(const std::string &path) {
 	StringUtil::toLower(lpath);
 	auto tokens = StringUtil::splitRef(lpath, { '/' });
 	ArchiveEntry *current = &root_;
+
+	std::lock_guard<std::mutex> lock(mutex_);
 	for (const auto &token : tokens) {
 		auto iter = current->childrenNames.find(token);
 		if (iter != current->childrenNames.end()) {

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <mutex>
 #include <fstream>
 
 class BinaryReader;
@@ -74,6 +75,8 @@ private:
 	void extractPic(ArchiveEntry &pic);
 
 	ArchiveEntry root_;
+
+	std::mutex mutex_;
 
 	std::ifstream ifs_;
 };

@@ -1,3 +1,6 @@
 [submodule "libraries/libsoundio"]
 	path = libraries/libsoundio
 	url = https://github.com/andrewrk/libsoundio.git
+[submodule "libraries/imgui"]
+	path = libraries/imgui
+	url = https://github.com/ocornut/imgui.git
