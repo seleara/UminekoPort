@@ -140,8 +140,11 @@
     <ClCompile Include="src\data\archive.cc" />
     <ClCompile Include="src\engine\engine.cc" />
     <ClCompile Include="src\engine\graphicscontext.cc" />
+    <ClCompile Include="src\graphics\font.cc" />
+    <ClCompile Include="src\graphics\gluniformbuffer.cc" />
     <ClCompile Include="src\graphics\mask.cc" />
     <ClCompile Include="src\graphics\shader.cc" />
+    <ClCompile Include="src\graphics\sprite.cc" />
     <ClCompile Include="src\graphics\spritebatch.cc" />
     <ClCompile Include="src\graphics\texture.cc" />
     <ClCompile Include="src\graphics\uniformbuffer.cc" />
@@ -151,16 +154,20 @@
     <ClCompile Include="src\math\time.cc" />
     <ClCompile Include="src\script\script.cc" />
     <ClCompile Include="src\script\scriptdecompiler.cc" />
+    <ClCompile Include="src\util\binaryreader.cc" />
     <ClCompile Include="src\util\string.cc" />
     <ClCompile Include="src\window\window.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\audio\atrac3.h" />
     <ClInclude Include="src\audio\audio.h" />
+    <ClInclude Include="src\audio\audiomanager.h" />
+    <ClInclude Include="src\audio\audiostream.h" />
     <ClInclude Include="src\data\archive.h" />
     <ClInclude Include="src\data\vertexbuffer.h" />
     <ClInclude Include="src\engine\engine.h" />
     <ClInclude Include="src\engine\graphicscontext.h" />
+    <ClInclude Include="src\graphics\font.h" />
     <ClInclude Include="src\graphics\framebuffer.h" />
     <ClInclude Include="src\graphics\gluniformbuffer.h" />
     <ClInclude Include="src\graphics\mask.h" />

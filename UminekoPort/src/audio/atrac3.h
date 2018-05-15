@@ -3,7 +3,12 @@
 #include <string>
 #include <vector>
 
-#include "audio.h"
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavformat/avio.h>
+#include <libswresample/swresample.h>
+}
 
 class Archive;
 

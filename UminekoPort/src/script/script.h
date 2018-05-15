@@ -62,13 +62,17 @@ public:
 	void pause() {
 		if (commandTest_) return;
 		paused_ = true;
-		while (paused_ && !stopped_) {}
+
+		std::unique_lock<std::mutex> lock(pauseMutex_);
+		cv_.wait(lock, [&]() { return !paused_ || stopped_; });
 	}
 	void resume() {
 		paused_ = false;
+		cv_.notify_one();
 	}
 	void stop() {
 		stopped_ = true;
+		cv_.notify_one();
 	}
 
 	int version() const {
@@ -80,6 +84,9 @@ public:
 	}
 private:
 	friend class ScriptDecompiler;
+
+	std::mutex pauseMutex_;
+	std::condition_variable cv_;
 
 	std::string path_;
 	std::vector<unsigned char> data_;

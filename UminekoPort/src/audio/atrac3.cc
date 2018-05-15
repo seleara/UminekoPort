@@ -7,6 +7,8 @@ extern "C" {
 #include <libavutil/samplefmt.h>
 }
 
+#include "../data/archive.h"
+
 AT3File::AT3File() : avData_(NULL), decoded_frame(NULL) {
 
 }

@@ -1,8 +1,11 @@
-#include "audio.h"
+#include "audiostream.h"
 
 #include <iostream>
 
+#include <soundio/soundio.h>
+
 #include "atrac3.h"
+#include "audiomanager.h"
 
 AudioStream::~AudioStream() {
 	//if (buffer_)

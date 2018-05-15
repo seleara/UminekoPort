@@ -170,7 +170,7 @@ void GraphicsContext::render() {
 	};
 
 	VertexBuffer<float> vb;
-	vb.upload(vertices, sizeof(vertices));
+	vb.upload(vertices, (2 + 2 + 4) * 4);
 	vb.bind();
 	vb.setAttribute(0, 2, 8, 0);
 	vb.setAttribute(1, 2, 8, 2);
@@ -198,7 +198,6 @@ void GraphicsContext::render() {
 			glActiveTexture(GL_TEXTURE0 + 2);
 			transitionMask_.bind();
 		} else {
-			auto trans = UniformBuffer::uniformBuffer<ShaderTransition>("trans");
 			trans->progress.y = 0.0f;
 		}
 		trans.update();

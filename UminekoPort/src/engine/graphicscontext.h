@@ -56,7 +56,7 @@ class MessageWindow {
 public:
 	void init(Archive &archive) {
 		Texture msgTex;
-		//msgTex.loadTxa("msgwnd.txa", archive, "msgwnd");
+		msgTex.loadTxa("msgwnd.txa", archive, "msgwnd");
 		msgSprite_.setTexture(msgTex);
 		msgSprite_.textureRect = glm::ivec4(251, 15, 1637, 277);
 		//msgSprite_.textureRect = glm::vec4(0.1523f, 0.0486f, 0.9933f, 0.9618f);

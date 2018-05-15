@@ -12,8 +12,8 @@ public:
 
 private:
 	Clock clock;
-	double dt = 0.01;
-	double frameTime = 0;
-	double accumulator = 0;
-	double fpsUpdateFreq = 0;
+	double dt_ = 0.01;
+	double frameTime_ = 0;
+	double accumulator_ = 0;
+	double fpsUpdateFreq_ = 0;
 };

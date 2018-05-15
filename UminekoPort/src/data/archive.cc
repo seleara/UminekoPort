@@ -70,6 +70,8 @@ void Archive::explore(ArchiveEntry &folder) {
 					extractBup(child);
 				} else if (ext == ".pic") {
 					extractPic(child);
+				} else if (ext == ".msk") {
+					extractMsk(child.path);
 				} else {
 					std::ofstream ofs(child.name, std::ios_base::binary);
 					BinaryReader br(ifs_);
@@ -220,7 +222,7 @@ struct BMPHeader {
 };
 #pragma pack(pop)
 
-void Archive::writeImage(const std::string &path, unsigned char *data, int width, int height, int scanline) {
+void Archive::writeImage(const std::string &path, unsigned char *data, int width, int height, int scanline, int bpp) {
 	/*std::ofstream ofs(path, std::ios_base::binary);
 	BMPHeader header;
 
@@ -252,17 +254,21 @@ void Archive::writeImage(const std::string &path, unsigned char *data, int width
 		}
 	}*/
 
-	unsigned char *transformed = new unsigned char[scanline * height];
-	for (int i = 0; i < width * height; ++i) {
-		transformed[i * 4 + 0] = data[i * 4 + 2];
-		transformed[i * 4 + 1] = data[i * 4 + 1];
-		transformed[i * 4 + 2] = data[i * 4 + 0];
-		transformed[i * 4 + 3] = data[i * 4 + 3];
+	if (bpp == 4) {
+		unsigned char *transformed = new unsigned char[scanline * height];
+		for (int i = 0; i < width * height; ++i) {
+			transformed[i * 4 + 0] = data[i * 4 + 2];
+			transformed[i * 4 + 1] = data[i * 4 + 1];
+			transformed[i * 4 + 2] = data[i * 4 + 0];
+			transformed[i * 4 + 3] = data[i * 4 + 3];
+		}
+
+		stbi_write_png(path.c_str(), width, height, 4, transformed, scanline);
+
+		delete[] transformed;
+	} else if (bpp == 1) {
+		stbi_write_png(path.c_str(), width, height, 1, data, scanline);
 	}
-
-	stbi_write_png(path.c_str(), width, height, 4, transformed, scanline);
-
-	delete[] transformed;
 }
 
 struct TxaHeader {
@@ -500,31 +506,18 @@ Msk Archive::getMsk(const std::string &path) {
 	msk.height = header.height;
 	msk.pixels.resize(msk.width * msk.height);
 
-	// just to test the shader
-	/*for (int i = 0; i < msk.height; ++i) {
-		for (int j = 0; j < msk.width; ++j) {
-			msk.pixels[i * msk.width + j] = (255.0 / msk.height) * i;
-		}
-	}*/
-
-	struct MskValue {
-		int width;
-		uint16_t val;
-		uint16_t off;
-	};
-
-	//std::vector<MskValue> vals;
-
 	int pixelOff = 0;
 	while (br.tellg() < entry.offset + entry.size) {
 		auto ctrl = br.read<uint8_t>();
 
-		// The bits in ctrl specifies the size of the next 8 values, 1 = uint16, 0 = uint8
+		// The bits in ctrl specifies the size of the next 8 values, 1 = count (4 bits) + offset (12 bits), 0 = raw pixel (uint8)
 		for (int i = 0; i < 8; ++i) {
 			if (br.tellg() >= entry.offset + entry.size) break;
 			auto bit = (ctrl >> i) & 1;
 			if (bit) {
 				auto bytes = br.read<uint16_t>();
+				// The offset is a bit weird. It is 12 bits in total, with the lower 8 bits being bits 8-15 of the uint16 value.
+				// The remaining upper 4 bits are bits 4-7.
 				int offset = ((bytes >> 8) & 0xff) | (((bytes >> 4) & 0xf) << 8);
 				int count = (bytes & 0xf) + 3;
 				for (int i = 0; i < count; ++i) {
@@ -532,23 +525,10 @@ Msk Archive::getMsk(const std::string &path) {
 					++pixelOff;
 				}
 			} else {
-				//vals.push_back({ 1, br.read<uint8_t>() });
 				msk.pixels[pixelOff++] = br.read<uint8_t>();
 			}
 		}
 	}
-
-	/*for (int vi = 0; vi < vals.size(); ++vi) {
-		const auto &val = vals[vi];
-		if (val.width == 1) {
-			msk.pixels[pixelOff++] = static_cast<uint8_t>(val.val & 0xff);
-		} else {
-			for (int i = 0; i < val.val + 3; ++i) {
-				msk.pixels[pixelOff] = msk.pixels[pixelOff - val.off - 1];
-				++pixelOff;
-			}
-		}
-	}*/
 
 	return msk;
 }
@@ -751,6 +731,7 @@ void Archive::scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br
 			entry.parent = &current;
 			entry.isFolder = true;
 			entry.name = std::move(name);
+			entry.path = current.path + entry.name + "/";
 			current.childrenNames.insert({ entry.name, current.children.size() - 1 });
 			scan(offset, entry, br);
 		} else {
@@ -759,6 +740,7 @@ void Archive::scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br
 			entry.offset = offset;
 			entry.size = chunk.size;
 			entry.name = std::move(name);
+			entry.path = current.path + entry.name;
 			current.childrenNames.insert({ entry.name, current.children.size() - 1 });
 		}
 	}

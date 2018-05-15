@@ -87,7 +87,7 @@ public:
 	}
 	const glm::ivec2 &size() const {
 		if (!resource_)
-			return glm::ivec2();
+			return nullSize_;
 		return resource_->size_;
 	}
 
@@ -104,6 +104,8 @@ public:
 private:
 	friend class Framebuffer;
 	friend class GraphicsContext;
+
+	static const glm::ivec2 nullSize_;
 
 	std::shared_ptr<TextureResource> resource_;
 };

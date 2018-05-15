@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <iostream>
-#include <map>
 #include <string>
 
 #include <GL/glew.h>

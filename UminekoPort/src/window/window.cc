@@ -103,9 +103,11 @@ void Window::swapBuffers() {
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, singlesampleFbo_);
 	//}
 	glDrawBuffer(GL_BACK);                       // Set the back buffer as the draw buffer
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	auto wx = size_.x / 2.0 - fboSize_.x / 2.0;
 	auto wy = size_.y / 2.0 - fboSize_.y / 2.0;
+	wx = 0;
+	wy = 0;
 	glBlitFramebuffer(0, 0, static_cast<GLint>(fboSize_.x), static_cast<GLint>(fboSize_.y), wx, wy, static_cast<GLint>(wx + fboSize_.x), static_cast<GLint>(wy + fboSize_.y), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 	glfwSwapBuffers(window_);
@@ -137,4 +139,39 @@ bool Window::popEvent(WindowEvent &event) {
 		return true;
 	}
 	return false;
+}
+
+void Window::resizeCallback(int width, int height) {
+	size_ = glm::vec2(width, height);
+	fboSize_ = (width <= height) ? glm::vec2(width, width * (9.0 / 16.0)) : glm::vec2(height * (16.0 / 9.0), height);
+	WindowEvent e;
+	e.type = WindowEvent::Type::Resized;
+	e.size = size_;
+
+	//glViewport(0, 0, width, height);
+	glViewport(0, 0, fboSize_.x, fboSize_.y);
+
+	//int maxSamples;
+	//glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+
+	//int samples = glm::min(maxSamples, Config::instance().samples());
+	//if (samples > 0) --samples;
+
+	/*if (Config::instance().samples() > maxSamples) {
+	std::cerr << "Warning: MSAA specified with " << Config::instance().samples() << " samples, only " << maxSamples << " supported." << std::endl;
+	}*/
+
+	// Multisampling
+	/*glBindRenderbuffer(GL_RENDERBUFFER, multisampleDepthRb_);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT24, width, height);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, multisampleTex_);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);*/
+
+	// Singlesampling
+	glBindRenderbuffer(GL_RENDERBUFFER, singlesampleDepthRb_);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, fboSize_.x, fboSize_.y);
+	glBindTexture(GL_TEXTURE_2D, singlesampleTex_);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fboSize_.x, fboSize_.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+	eventQueue_.push_back(std::move(e));
 }

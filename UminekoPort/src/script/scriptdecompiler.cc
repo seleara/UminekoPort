@@ -670,29 +670,33 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 		return fi;
 	}
 
-	if (unk3 == 0x2D) {
-		ss << ", " << parseArgument(arg(SDType::Bytes, 8), br) << ") // ???";
-	} else if (type != 0 && unk3 != 0) { // unk3 == 1
-		spriteId = br.read<uint16_t>();
+	if (type != 0) {
 		if (type == 3) {
+			spriteId = br.read<uint16_t>();
 			ss << ", \"bustup/" << std::string(script_.sprites_[spriteId].name) << ".bup\", \"" << std::string(script_.sprites_[spriteId].pose) << "\"";
 			if (unk3 == 3) {
 				ss << ", " << parseArgument(arg(SDType::UInt16), br);
 			}
 			ss << ") // spriteId = " << spriteId;
 		} else if (type == 2) {
+			spriteId = br.read<uint16_t>();
 			ss << ", \"picture/" << std::string(script_.cgs_[spriteId].name) << ".pic\"";
 			ss << ") // cgId = " << spriteId;
 		} else if (type == 4) {
 			// anim?
+			spriteId = br.read<uint16_t>();
 			auto animName = Engine::game == "umi" ? std::string(script_.umiAnims_[spriteId].name) : std::string(script_.chiruAnims_[spriteId].name);
 			ss << ", \"anime/" << animName << ".bsf\"";
 			auto animUnknown = br.read<uint16_t>();
 			ss << ", " << animUnknown << ") // animId = " << spriteId;
 		} else if (type == 1) {
-			ss << ", " << spriteId;
-			ss << ", " << parseArgument(arg(SDType::UInt16), br);
-			ss << ", " << parseArgument(arg(SDType::UInt16), br);
+			if (unk3 == 0x2D) {
+				ss << ", " << parseArgument(arg(SDType::Bytes, 8), br);
+			} else { // higu?
+				ss << ", " << spriteId;
+				ss << ", " << parseArgument(arg(SDType::UInt16), br);
+				ss << ", " << parseArgument(arg(SDType::UInt16), br);
+			}
 			ss << ")";
 		} else {
 			ss << ", UNKNOWN)";

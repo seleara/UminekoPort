@@ -8,6 +8,7 @@
 #include "../math/time.h"
 #include "../audio/audio.h"
 #include "../imgui/glimgui.h"
+#include "../graphics/font.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -48,7 +49,12 @@ void Engine::run() {
 		script.load("main.snr", arc);
 	});
 
+	Font font;
+	font.load("default.fnt", arc);
+
 	bool skipping = false;
+
+	Time::fixedDeltaTime_ = dt_;
 
 	WindowEvent event;
 	while (window.isOpen()) {
@@ -86,24 +92,24 @@ void Engine::run() {
 			}
 		}
 
-		frameTime = clock.reset();
-		if (frameTime > 0.25)
-			frameTime = 0.25;
-		Time::totalTime_ += frameTime;
-		Time::deltaTime_ = frameTime;
-		accumulator += frameTime;
+		frameTime_ = clock.reset();
+		if (frameTime_ > 0.25)
+			frameTime_ = 0.25;
+		Time::totalTime_ += frameTime_;
+		Time::deltaTime_ = frameTime_;
+		accumulator_ += frameTime_;
 
-		fpsUpdateFreq += frameTime;
-		if (fpsUpdateFreq >= 0.5) {
-			double fps = 1.0 / frameTime;
+		fpsUpdateFreq_ += frameTime_;
+		if (fpsUpdateFreq_ >= 0.5) {
+			double fps = 1.0 / frameTime_;
 			//std::stringstream ss;
 			//ss << this->game << " - FPS: " << fps << " (frame time " << frameTime << ")";
 			//window.setTitle(ss.str());
-			fpsUpdateFreq = 0;
+			fpsUpdateFreq_ = 0;
 		}
 
-		while (accumulator >= dt) {
-			accumulator -= dt;
+		while (accumulator_ >= dt_) {
+			accumulator_ -= dt_;
 
 			// fixed update
 		}

@@ -7,85 +7,35 @@
 
 #include "endian.h"
 
-namespace {
+namespace detail {
 
 struct MemoryBuffer : public std::basic_streambuf<char> {
-	MemoryBuffer(const char *begin, size_t size) {
-		char *ptr(const_cast<char *>(begin));
-		this->setg(ptr, ptr, ptr + size);
-	}
-
+	MemoryBuffer(const char *begin, size_t size);
 protected:
-	std::streampos seekpos(std::streampos pos, std::ios_base::openmode which = std::ios_base::in) override {
-		this->setg(this->eback(), this->eback() + pos, this->egptr());
-		return pos;
-	}
-
-	std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which = std::ios_base::in) override {
-		switch (way) {
-		case std::ios_base::beg:
-			this->setg(this->eback(), this->eback() + off, this->egptr());
-			break;
-		case std::ios_base::cur:
-			this->gbump(static_cast<int>(off));
-			break;
-		case std::ios_base::end:
-			this->setg(this->eback(), this->egptr() - off, this->egptr());
-			break;
-		}
-		return std::streampos(this->gptr() - this->eback());
-	}
+	std::streampos seekpos(std::streampos pos, std::ios_base::openmode which = std::ios_base::in) override;
+	std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which = std::ios_base::in) override;
 };
 
 }
 
 class BinaryReader {
 public:
-	BinaryReader() : ownsStream_(false), is_(nullptr) {}
+	BinaryReader();
+	explicit BinaryReader(std::istream &is);
+	BinaryReader(const char *data, size_t size);
+	~BinaryReader();
 
-	explicit BinaryReader(std::istream &is) : ownsStream_(false), is_(&is) {
-	}
-
-	BinaryReader(const char *data, size_t size) : ownsStream_(true) {
-		memoryBuffer_ = std::make_unique<MemoryBuffer>(data, size);
-		is_ = new std::istream(memoryBuffer_.get(), std::ios_base::binary);
-		is_->rdbuf(memoryBuffer_.get());
-		//std::cout << is_->good() << std::endl;
-	}
-
-	~BinaryReader() {
-		if (ownsStream_) {
-			delete is_;
-		}
-	}
-
-	void wrap(const char *data, size_t size) {
-		ownsStream_ = true;
-		memoryBuffer_ = std::make_unique<MemoryBuffer>(data, size);
-		is_ = new std::istream(memoryBuffer_.get(), std::ios_base::binary);
-		is_->rdbuf(memoryBuffer_.get());
-	}
+	void wrap(const char *data, size_t size);
 
 	// Stream redirect functions
-	std::istream &seekg(std::streampos pos) {
-		return is_->seekg(pos);
-	}
+	std::istream &seekg(std::streampos pos);
+	std::istream &seekg(std::streamoff off, std::ios_base::seekdir way);
 
-	std::istream &seekg(std::streamoff off, std::ios_base::seekdir way) {
-		return is_->seekg(off, way);
-	}
+	std::streampos tellg();
 
-	std::streampos tellg() {
-		return is_->tellg();
-	}
+	std::istream &skip(std::streamoff off);
 
-	std::istream &skip(std::streamoff off) {
-		return is_->seekg(off, std::ios_base::cur);
-	}
-
-	void read(char *buffer, size_t size) {
-		is_->read(buffer, size);
-	}
+	void read(char *buffer, size_t size);
 
 	template <typename T>
 	T read() {
@@ -102,46 +52,21 @@ public:
 		return val;
 	}
 
-	std::string readString() {
-		/*char c;
-		is_->read(&c, 1);
-		std::stringstream ss;
-		while (is_->good() && c != 0) {
-		ss << c;
-		is_->read(&c, 1);
-		}
-		return ss.str();*/
-		std::string val;
-		std::getline(*is_, val, '\0');
-		return val;
-	}
-
-	std::string readString(size_t length) {
-		char *s = new char[length];
-		is_->read(s, length);
-		std::string val(s, length);
-		delete[] s;
-		return val;
-	}
+	std::string readString();
+	std::string readString(size_t length);
 private:
-	bool ownsStream_ = false;
-	std::unique_ptr<MemoryBuffer> memoryBuffer_;
+	bool ownsStream_;
+	std::unique_ptr<detail::MemoryBuffer> memoryBuffer_;
 	std::istream *is_;
 };
 
 class Bitstream {
 public:
-	Bitstream() : bitOffset_(0) {}
+	Bitstream();
 
-	void wrap(const char *data, size_t size) {
-		data_ = data;
-		size_ = size;
-		bitOffset_ = 0;
-	}
+	void wrap(const char *data, size_t size);
 
-	void seek(size_t bitOffset) {
-		bitOffset_ = bitOffset;
-	}
+	void seek(size_t bitOffset);
 
 	template <typename T>
 	T read(size_t bits) {

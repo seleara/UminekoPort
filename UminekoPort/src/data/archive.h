@@ -13,7 +13,7 @@ struct ArchiveEntry {
 	std::vector<ArchiveEntry> children;
 	std::map<std::string, int, std::less<>> childrenNames;
 
-	std::string name;
+	std::string name, path;
 	bool isFolder = false;
 	uint64_t offset;
 	uint32_t size;
@@ -63,6 +63,7 @@ public:
 	Pic getPic(const std::string &path);
 	Msk getMsk(const std::string &path);
 	void extractMsk(const std::string &path);
+	void writeImage(const std::string &path, unsigned char *data, int width, int height, int scanline, int bpp=4);
 private:
 	ArchiveEntry &get(const std::string &path);
 	void scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br);
@@ -70,7 +71,6 @@ private:
 
 	void decode(const unsigned char *buffer, size_t bufferSize, unsigned char *output);
 	void dpcm(unsigned char *source, unsigned char *destination, int width, int height, int scanline);
-	void writeImage(const std::string &path, unsigned char *data, int width, int height, int scanline);
 	void extractTxa(ArchiveEntry &txa);
 	void extractBup(ArchiveEntry &bup);
 	void extractPic(ArchiveEntry &pic);

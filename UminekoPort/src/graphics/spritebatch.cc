@@ -77,19 +77,19 @@ std::vector<std::pair<size_t, Texture>> SpriteBatch::upload() {
 		return (az < bz) || ((az == bz) && (aid < bid));
 	});
 
-	auto setBuf = [&](int spriteIndex, int triangleIndex, float x, float y, int tx, int ty, const glm::vec4 &c) {
+	auto setBuf = [&](int spriteIndex, int triangleIndex, float x, float y, float tx, float ty, const glm::vec4 &c) {
 		auto offset = spriteIndex * stride + triangleIndex * vs;
 		buffer[offset + 0] = x;
 		buffer[offset + 1] = y;
-		buffer[offset + 2] = static_cast<float>(tx);
-		buffer[offset + 3] = static_cast<float>(ty);
+		buffer[offset + 2] = tx;
+		buffer[offset + 3] = ty;
 		buffer[offset + 4] = c.r;
 		buffer[offset + 5] = c.g;
 		buffer[offset + 6] = c.b;
 		buffer[offset + 7] = c.a;
 	};
 	int i = 0;
-	const auto &windowSize = glm::ivec2(1920, 1080);//Window::main().size();
+	const auto &windowSize = glm::vec2(1920.0f, 1080.0f);//Window::main().size();
 	for (const auto &st : sprites_) {
 		const auto &s = st.first;
 		const auto &t = st.second;

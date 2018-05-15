@@ -1,11 +1,13 @@
-#include "audio.h"
-
-#include "atrac3.h"
+#include "audiomanager.h"
 
 #include <iostream>
 #include <sstream>
 
 #include <imgui/imgui.h>
+#include <soundio/soundio.h>
+
+#include "audiostream.h"
+#include "atrac3.h"
 
 AudioManager::AudioManager(Archive &archive) : archive_(archive) {
 	bgm_ = std::make_unique<AudioStream>();

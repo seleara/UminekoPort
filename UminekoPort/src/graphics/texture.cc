@@ -225,3 +225,5 @@ std::shared_ptr<TextureResource> TextureCache::loadMsk(const std::string &path, 
 	}
 	return iter->second;
 }
+
+const glm::ivec2 TextureWrapper::nullSize_;
