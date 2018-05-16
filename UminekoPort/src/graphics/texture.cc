@@ -19,6 +19,29 @@ void TextureResource::create(int width, int height, bool normalized) {
 	size_.y = height;
 }
 
+void TextureResource::subImage(int x, int y, int width, int height, int bpp, const std::vector<unsigned char> &pixels) {
+	auto texEnum = normalized_ ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE;
+	glBindTexture(texEnum, texture_);
+	GLenum formatEnum;
+	switch (bpp) {
+	case 4:
+		formatEnum = GL_RGBA;
+		break;
+	case 3:
+		formatEnum = GL_RGB;
+		break;
+	case 2:
+		formatEnum = GL_RG;
+		break;
+	case 1:
+		formatEnum = GL_RED;
+		break;
+	default:
+		throw std::runtime_error("Unsupported bpp.");
+	}
+	glTexSubImage2D(texEnum, 0, x, y, width, height, formatEnum, GL_UNSIGNED_BYTE, pixels.data());
+}
+
 void TextureResource::load(const std::string &path, Archive &archive) {
 	auto pic = archive.getPic(path);
 	glGenTextures(1, &texture_);

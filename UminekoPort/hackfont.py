@@ -24,7 +24,7 @@ def main():
 		#update(96, 8, 0xff)
 		#update(96, 9, 0xff)
 		#update(96, 10, 0xff)
-		update(98, 9, 0xff)
+		update(98, 8, 0x90)
 		#update(98, 15, 0x2c)
 		#update(98, 16, 0x01)
 		#for i in range(10):

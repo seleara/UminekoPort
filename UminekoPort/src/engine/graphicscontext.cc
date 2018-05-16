@@ -3,6 +3,14 @@
 #include "../graphics/shader.h"
 #include "../graphics/uniformbuffer.h"
 
+void MessageWindow::render() {
+	if (!visible()) return;
+	SpriteBatch batch;
+	batch.add(msgSprite_, msgTransform_);
+	batch.render();
+	text_.render();
+}
+
 GraphicsContext::GraphicsContext(Window &window, Archive &archive) : window_(window), archive_(archive) {
 	// Prev framebuffer
 	/*prevTexture_.create(window_.fboSize().x, window_.fboSize().y);
@@ -220,8 +228,5 @@ void GraphicsContext::render() {
 	glEnable(GL_DEPTH_TEST);
 
 	//lock.unlock();
-	if (msg_.visible()) {
-		batch.add(msg_.msgSprite_, msg_.msgTransform_);
-	}
-	batch.render();
+	msg_.render();
 }

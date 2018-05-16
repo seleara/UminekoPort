@@ -59,7 +59,7 @@ void Window::create(int width, int height, const std::string &title) {
 	fboSize_ = (width <= height) ? glm::vec2(width, width * (9.0 / 16.0)) : glm::vec2(height * (16.0 / 9.0), height);
 
 	// Singlesampling
-	glGenTextures(1, &singlesampleTex_);
+	/*glGenTextures(1, &singlesampleTex_);
 	glBindTexture(GL_TEXTURE_2D, singlesampleTex_);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fboSize_.x, fboSize_.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
@@ -74,7 +74,11 @@ void Window::create(int width, int height, const std::string &title) {
 
 	if (!checkFramebufferStatus()) throw std::runtime_error("Framebuffer error.");
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);*/
+
+	singlesampleFbo_.create(fboSize_.x, fboSize_.y);
+	bindFramebuffer();
+
 	glDisable(GL_MULTISAMPLE);
 
 }
@@ -95,12 +99,14 @@ void Window::clear(const glm::vec4 &color) {
 
 void Window::swapBuffers() {
 	//glfwSwapBuffers(window_);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);   // Make sure no FBO is set as the draw framebuffer
+	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);   // Make sure no FBO is set as the draw framebuffer
+	Framebuffer::bindDrawNull();
 
 	//if (previousMultisampling_) {
 	//	glBindFramebuffer(GL_READ_FRAMEBUFFER, multisampleFbo_); // Make sure your multisampled FBO is the read framebuffer
 	//} else {
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, singlesampleFbo_);
+		//glBindFramebuffer(GL_READ_FRAMEBUFFER, singlesampleFbo_);
+		singlesampleFbo_.bindRead();
 	//}
 	glDrawBuffer(GL_BACK);                       // Set the back buffer as the draw buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -120,7 +126,9 @@ void Window::swapBuffers() {
 	//if (multisampling) {
 	//	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, multisampleFbo_);
 	//} else {
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
+		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
+	Framebuffer::bindReadNull();
+	singlesampleFbo_.bindDraw();
 	//}
 }
 
@@ -168,10 +176,11 @@ void Window::resizeCallback(int width, int height) {
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);*/
 
 	// Singlesampling
-	glBindRenderbuffer(GL_RENDERBUFFER, singlesampleDepthRb_);
+	/*glBindRenderbuffer(GL_RENDERBUFFER, singlesampleDepthRb_);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, fboSize_.x, fboSize_.y);
 	glBindTexture(GL_TEXTURE_2D, singlesampleTex_);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fboSize_.x, fboSize_.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fboSize_.x, fboSize_.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);*/
+	singlesampleFbo_.resize(fboSize_.x, fboSize_.y);
 
 	eventQueue_.push_back(std::move(e));
 }

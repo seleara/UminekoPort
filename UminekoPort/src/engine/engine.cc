@@ -36,6 +36,10 @@ void Engine::run() {
 	shader.load("shaders/2d.glsl");
 	shader.saveCache("2d");
 
+	Shader textShader;
+	shader.load("shaders/text.glsl");
+	shader.saveCache("text");
+
 	UniformBuffer::createUniformBuffer<Matrices>("mvp2d", 1);
 	UniformBuffer::bindUniformBuffer("mvp2d");
 	auto mvp2d = UniformBuffer::uniformBuffer<Matrices>("mvp2d");
@@ -49,8 +53,7 @@ void Engine::run() {
 		script.load("main.snr", arc);
 	});
 
-	Font font;
-	font.load("default.fnt", arc);
+	Font::global().load("default.fnt", arc);
 
 	bool skipping = false;
 

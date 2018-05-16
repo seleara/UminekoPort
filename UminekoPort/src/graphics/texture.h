@@ -16,6 +16,7 @@ public:
 		glDeleteTextures(1, &texture_);
 	}
 	void create(int width, int height, bool normalized = false);
+	void subImage(int x, int y, int width, int height, int bpp, const std::vector<unsigned char> &pixels);
 	void load(const std::string &path, Archive &archive);
 	void load(const char *pixels, int width, int height, int bpp, bool normalized = false);
 	void loadBup(const std::string &path, Archive &archive, const std::string &pose);
@@ -55,6 +56,12 @@ public:
 
 	void create(int width, int height, bool normalized = false) {
 		resource_ = TextureCache::create(width, height, normalized);
+	}
+
+	void subImage(int x, int y, int width, int height, int bpp, const std::vector<unsigned char> &pixels) {
+		if (!resource_)
+			throw std::runtime_error("Cannot use subImage on a null texture.");
+		resource_->subImage(x, y, width, height, bpp, pixels);
 	}
 	
 	void load(const std::string &path, Archive &archive) {

@@ -10,6 +10,7 @@
 #include "../graphics/sprite.h"
 #include "../math/transform.h"
 #include "../math/time.h"
+#include "../graphics/font.h"
 
 enum class GraphicsLayerType {
 	None,
@@ -65,19 +66,33 @@ public:
 		msgTransform_.scale *= 1.25f;
 		msgTransform_.position.y = 20;
 		msgTransform_.position.z = 10;
+
+		text_.setFont(Font::global());
+		text_.setWrap(1560);
+		text_.transform().position.x = 200;
+		text_.transform().position.y = 650;
 	}
 
 	void addText(std::string text) {
 		done_ = false;
-		messages_.push_back(std::move(text));
+		messages_.push_back(std::move(text_.convert(text)));
+		if (messages_.size() == 1)
+			text_.setText(messages_.front());
 	}
 
 	void advance() {
 		if (!done_) {
-			done_ = true;
+			//done_ = true;
+			text_.advance();
+			if (text_.done()) {
 
-			// if whole message is done (to be implemented)
-			messages_.pop_front();
+				// if whole message is done (to be implemented)
+				messages_.pop_front();
+				if (messages_.size() >= 1)
+					text_.setText(messages_.front());
+				else
+					done_ = true;
+			}
 		}
 	}
 
@@ -92,6 +107,8 @@ public:
 	bool visible() const {
 		return visible_;
 	}
+
+	void render();
 private:
 	friend class GraphicsContext;
 	Sprite msgSprite_;
@@ -99,6 +116,8 @@ private:
 	std::deque<std::string> messages_;
 	bool done_ = true;
 	bool visible_ = false;
+
+	Text text_;
 };
 
 struct ShaderTransition {

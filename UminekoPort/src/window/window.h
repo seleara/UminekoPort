@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 
 #include "input.h"
+#include "../graphics/framebuffer.h"
 
 struct WindowEvent {
 	enum class Type {
@@ -50,7 +51,8 @@ public:
 		return fboSize_;
 	}
 	void bindFramebuffer() {
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
+		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
+		singlesampleFbo_.bindDraw();
 	}
 protected:
 	void pushEvent(WindowEvent &&event);
@@ -144,51 +146,13 @@ private:
 		eventQueue_.push_back(std::move(e));
 	}
 
-	static bool checkFramebufferStatus() {
-		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if (status == GL_FRAMEBUFFER_COMPLETE) return true;
-		if (status == GL_FRAMEBUFFER_UNDEFINED) {
-			std::cerr << "OpenGL Error: Framebuffer does not exist." << std::endl;
-			return false;
-		}
-		if (status == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT) {
-			std::cerr << "OpenGL Error: One or more framebuffer attachment points are incomplete." << std::endl;
-			return false;
-		}
-		if (status == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT) {
-			std::cerr << "OpenGL Error: Framebuffer doesn't have any attachments." << std::endl;
-			return false;
-		}
-		if (status == GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER) {
-			std::cerr << "OpenGL Error: GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER." << std::endl;
-			return false;
-		}
-		if (status == GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER) {
-			std::cerr << "OpenGL Error: GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER." << std::endl;
-			return false;
-		}
-		if (status == GL_FRAMEBUFFER_UNSUPPORTED) {
-			std::cerr << "OpenGL Error: Internal formats of framebuffer attachments are not supported." << std::endl;
-			return false;
-		}
-		if (status == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE) {
-			std::cerr << "OpenGL Error: Different sample count for different attachments of multisampled framebuffer, or fixed sample locations are disabled." << std::endl;
-			return false;
-		}
-		if (status == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS) {
-			std::cerr << "OpenGL Error: GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS." << std::endl;
-			return false;
-		}
-		std::cerr << "Unknown framebuffer error." << std::endl;
-		return false;
-	}
-
 	glm::ivec2 size_;
 	glm::ivec2 fboSize_;
 	glm::vec2 mousePosition_;
 
 	// Single sample rendering
-	GLuint singlesampleTex_;
-	GLuint singlesampleFbo_;
-	GLuint singlesampleDepthRb_;
+	//GLuint singlesampleTex_;
+	//GLuint singlesampleFbo_;
+	//GLuint singlesampleDepthRb_;
+	Framebuffer singlesampleFbo_;
 };
