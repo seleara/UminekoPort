@@ -91,6 +91,7 @@ private:
 	FuncInfo command_A0(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_B0(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_B9(const SDCommand &cmd, BinaryReader &br) const;
+	FuncInfo command_BD(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo display_image(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_C2(const SDCommand &cmd, BinaryReader &br) const;
 	FuncInfo command_C7(const SDCommand &cmd, BinaryReader &br) const;

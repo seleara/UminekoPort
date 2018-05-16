@@ -39,6 +39,7 @@ void ScriptDecompiler::setup() {
 	for (auto &cmd : commands_) {
 		cmd.opcode = -1;
 	}
+	commands_[0x00] = { 0x00, {} }; // nop
 	commands_[0x3D] = { 0x3D, { arg(SDType::Bytes, 6) } }; // ???
 	//commands_[0x40] = { 0x40, { arg(SDType::Bytes, 3) } }; // ???
 	commands_[0x41] = { 0x41, {} }; // special case
@@ -61,6 +62,7 @@ void ScriptDecompiler::setup() {
 	commands_[0x87] = { 0x87, { arg(SDType::Int16) } };
 	commands_[0x88] = { 0x88, {} };
 	commands_[0x89] = { 0x89, {} };
+	commands_[0x8B] = { 0x8B, { arg(SDType::String16) } };
 	commands_[0x8C] = { 0x8C, { arg(SDType::Bytes, 4), arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::String8), arg(SDType::SplitString8) } };
 	commands_[0x8D] = { 0x8D, {} }; // special case?
 	if (script_.version() == 0x01)
@@ -87,7 +89,8 @@ void ScriptDecompiler::setup() {
 	commands_[0xB4] = { 0xB4, {} };
 	commands_[0xB6] = { 0xB6, {} };
 	commands_[0xB9] = { 0xB9, {} }; // special case
-	commands_[0xBD] = { 0xB3, { arg(SDType::Bytes, 3) } };
+	commands_[0xBA] = { 0xB9, { arg(SDType::Bytes, 2) } };
+	commands_[0xBD] = { 0xBD, { arg(SDType::Bytes, 3) } }; // special case
 	commands_[0xBE] = { 0xBE, { arg(SDType::UInt16) } };
 	commands_[0xBF] = { 0xBF, { arg(SDType::Bytes, 4) } };
 	commands_[0xC0] = { 0xC0, {} };
@@ -97,7 +100,7 @@ void ScriptDecompiler::setup() {
 	commands_[0xC4] = { 0xC4, { arg(SDType::Bytes, 4) } };
 	commands_[0xC5] = { 0xC5, { arg(SDType::Bytes, 2) } };
 	commands_[0xC6] = { 0xC6, {} };
-	commands_[0xC7] = { 0xC7, { arg(SDType::Bytes, 5) } };
+	commands_[0xC7] = { 0xC7, { arg(SDType::Bytes, 5) } }; // special case
 	commands_[0xC8] = { 0xC8, { arg(SDType::UInt16) } };
 	commands_[0xC9] = { 0xC9, {} };
 	commands_[0xCA] = { 0xCA, {} }; // special case
@@ -120,6 +123,7 @@ void ScriptDecompiler::setup() {
 	specialCases_[0xA0] = &ScriptDecompiler::command_A0;
 	specialCases_[0xB0] = &ScriptDecompiler::command_B0;
 	specialCases_[0xB9] = &ScriptDecompiler::command_B9;
+	specialCases_[0xBD] = &ScriptDecompiler::command_BD;
 	specialCases_[0xC1] = &ScriptDecompiler::display_image;
 	specialCases_[0xC2] = &ScriptDecompiler::command_C2;
 	specialCases_[0xC7] = &ScriptDecompiler::command_C7;
@@ -522,6 +526,8 @@ FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) co
 	if (next == 0x00) {
 		br.skip(-1);
 		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
+	} else if (next == 0x01) { // ???
+		ss << "unknown_transition_81(" << parseArgument(arg(SDType::UInt16), br);
 	} else if (next == 0x02) { // simple fade afaik
 		ss << "fade(" << parseArgument(arg(SDType::UInt16), br); // time in frames (60fps)
 	} else if (next == 0x03) { // specified mask
@@ -646,6 +652,19 @@ FuncInfo ScriptDecompiler::command_B9(const SDCommand &cmd, BinaryReader &br) co
 	return fi;
 }
 
+FuncInfo ScriptDecompiler::command_BD(const SDCommand &cmd, BinaryReader &br) const {
+	FuncInfo fi;
+	std::stringstream ss;
+	auto count = br.read<uint8_t>();
+	ss << getName(cmd.opcode) << "(" << (int)count;
+	for (int i = 0; i < count; ++i) {
+		ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
+	}
+	ss << ")";
+	fi.line = ss.str();
+	return fi;
+}
+
 FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br) const {
 	FuncInfo fi;
 	std::stringstream ss;
@@ -676,6 +695,8 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 			ss << ", \"bustup/" << std::string(script_.sprites_[spriteId].name) << ".bup\", \"" << std::string(script_.sprites_[spriteId].pose) << "\"";
 			if (unk3 == 3) {
 				ss << ", " << parseArgument(arg(SDType::UInt16), br);
+			} else if (unk3 == 5) {
+				ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
 			}
 			ss << ") // spriteId = " << spriteId;
 		} else if (type == 2) {
@@ -687,8 +708,10 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 			spriteId = br.read<uint16_t>();
 			auto animName = Engine::game == "umi" ? std::string(script_.umiAnims_[spriteId].name) : std::string(script_.chiruAnims_[spriteId].name);
 			ss << ", \"anime/" << animName << ".bsf\"";
-			auto animUnknown = br.read<uint16_t>();
-			ss << ", " << animUnknown << ") // animId = " << spriteId;
+			if (unk3 == 5) {
+				ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
+			}
+			ss << ") // imageId = " << spriteId;
 		} else if (type == 1) {
 			if (unk3 == 0x2D) {
 				ss << ", " << parseArgument(arg(SDType::Bytes, 8), br);
@@ -742,16 +765,24 @@ FuncInfo ScriptDecompiler::command_C7(const SDCommand &cmd, BinaryReader &br) co
 	ss << getName(cmd.opcode) << "(";
 	ss << parseArgument(arg(SDType::UInt16), br) << ", ";
 	auto unk2 = br.read<uint8_t>();
-	auto unk3 = br.read<uint16_t>();
-	ss << (int)unk2 << ", " << (int)unk3;
-	if (unk2 == 3) {
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
-	} else if (unk2 == 0) {
+	ss << (int)unk2;
+	if (unk2 == 0) {
+		//auto unk3 = br.read<uint8_t>();
+		//ss << ", " << (int)unk3;
 		if (Engine::game == "chiru") { // why? same script version (presumably)
 			ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
-		} else {
-			ss << ", " << parseArgument(arg(SDType::Bytes, 6), br);
 		}
+	} else if (unk2 == 1) {
+		ss << ", " << parseArgument(arg(SDType::Int16), br);
+	} else if (unk2 == 2) {
+		ss << ", " << parseArgument(arg(SDType::Int16), br);
+	} else if (unk2 == 3) {
+		ss << ", " << parseArgument(arg(SDType::Int16), br);
+		ss << ", " << parseArgument(arg(SDType::Int16), br);
+	} else if (unk2 == 6) {
+		ss << ", " << parseArgument(arg(SDType::Bytes, 4), br);
+	} else if (unk2 == 7) {
+		ss << ", " << parseArgument(arg(SDType::Bytes, 6), br);
 	}
 	ss << ")";
 	fi.line = ss.str();

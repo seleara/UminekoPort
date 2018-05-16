@@ -144,6 +144,7 @@
     <ClCompile Include="src\graphics\framebuffer.cc" />
     <ClCompile Include="src\graphics\gluniformbuffer.cc" />
     <ClCompile Include="src\graphics\mask.cc" />
+    <ClCompile Include="src\graphics\messagewindow.cc" />
     <ClCompile Include="src\graphics\shader.cc" />
     <ClCompile Include="src\graphics\sprite.cc" />
     <ClCompile Include="src\graphics\spritebatch.cc" />
@@ -172,6 +173,7 @@
     <ClInclude Include="src\graphics\framebuffer.h" />
     <ClInclude Include="src\graphics\gluniformbuffer.h" />
     <ClInclude Include="src\graphics\mask.h" />
+    <ClInclude Include="src\graphics\messagewindow.h" />
     <ClInclude Include="src\graphics\shader.h" />
     <ClInclude Include="src\graphics\sprite.h" />
     <ClInclude Include="src\graphics\spritebatch.h" />

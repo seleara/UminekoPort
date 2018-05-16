@@ -1,6 +1,5 @@
 #pragma once
 
-#include <deque>
 #include <mutex>
 
 #include "../window/window.h"
@@ -11,6 +10,7 @@
 #include "../math/transform.h"
 #include "../math/time.h"
 #include "../graphics/font.h"
+#include "../graphics/messagewindow.h"
 
 enum class GraphicsLayerType {
 	None,
@@ -51,73 +51,6 @@ struct GraphicsLayer {
 
 	GraphicsLayerProperties newProperties;
 	GraphicsLayerProperties properties;
-};
-
-class MessageWindow {
-public:
-	void init(Archive &archive) {
-		Texture msgTex;
-		msgTex.loadTxa("msgwnd.txa", archive, "msgwnd");
-		msgSprite_.setTexture(msgTex);
-		msgSprite_.textureRect = glm::ivec4(251, 15, 1637, 277);
-		//msgSprite_.textureRect = glm::vec4(0.1523f, 0.0486f, 0.9933f, 0.9618f);
-		msgSprite_.anchor = Anchor::Bottom;
-		msgSprite_.pivot = Pivot::Bottom;
-		msgTransform_.scale *= 1.25f;
-		msgTransform_.position.y = 20;
-		msgTransform_.position.z = 10;
-
-		text_.setFont(Font::global());
-		text_.setWrap(1560);
-		text_.transform().position.x = 200;
-		text_.transform().position.y = 650;
-	}
-
-	void addText(std::string text) {
-		done_ = false;
-		messages_.push_back(std::move(text_.convert(text)));
-		if (messages_.size() == 1)
-			text_.setText(messages_.front());
-	}
-
-	void advance() {
-		if (!done_) {
-			//done_ = true;
-			text_.advance();
-			if (text_.done()) {
-
-				// if whole message is done (to be implemented)
-				messages_.pop_front();
-				if (messages_.size() >= 1)
-					text_.setText(messages_.front());
-				else
-					done_ = true;
-			}
-		}
-	}
-
-	bool done() const {
-		return done_;
-	}
-
-	void setVisible(bool visible) {
-		visible_ = visible;
-	}
-
-	bool visible() const {
-		return visible_;
-	}
-
-	void render();
-private:
-	friend class GraphicsContext;
-	Sprite msgSprite_;
-	Transform msgTransform_;
-	std::deque<std::string> messages_;
-	bool done_ = true;
-	bool visible_ = false;
-
-	Text text_;
 };
 
 struct ShaderTransition {

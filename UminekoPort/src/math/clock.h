@@ -1,15 +1,18 @@
 #pragma once
 
+#define UMI_CLOCK_USE_CHRONO
+
+#ifdef UMI_CLOCK_USE_CHRONO
+
+#include <chrono>
+
+#else
+
 #include <Windows.h>
 #undef min
 #undef max
 
-#include <iostream>
-#include <chrono>
-
-#define UMI_CLOCK_USE_CHRONO
-
-namespace {
+namespace detail {
 
 const long long frequency = []() -> long long {
 	LARGE_INTEGER freq;
@@ -18,6 +21,8 @@ const long long frequency = []() -> long long {
 }();
 
 }
+
+#endif
 
 class Clock {
 public:

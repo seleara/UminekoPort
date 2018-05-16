@@ -86,6 +86,7 @@ void Text::setFont(const Font &font) {
 void Text::setText(const std::string &text) {
 	text_ = text;
 	currentSegment_ = 0;
+	isDone_ = false;
 	isDirty_ = true;
 }
 
