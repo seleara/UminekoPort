@@ -55,7 +55,7 @@ struct TextVoice : public TextEntry {
 };
 
 struct TextRuby : public TextEntry {
-	std::string furigana;
+	std::vector<std::unique_ptr<TextEntry>> furigana;
 	std::vector<std::unique_ptr<TextEntry>> glyphs;
 };
 
@@ -70,6 +70,9 @@ public:
 	int currentSegment() const;
 	bool done() const;
 
+	bool hasVoice() const;
+	const std::string &getVoice() const;
+
 	static std::string convert(const std::string &text);
 	static inline bool isSJISDoubleByte(uint8_t c) {
 		return (c >= 0x81 && c < 0xa0) || (c >= 0xe0);
@@ -78,6 +81,7 @@ public:
 	Transform &transform();
 	void render();
 private:
+	void setupGlyphs();
 	void renderFontTexture();
 
 	std::vector<std::unique_ptr<TextEntry>> glyphs_;
@@ -90,4 +94,9 @@ private:
 	int wrapWidth_ = 0;
 	int currentSegment_ = 0, segments_ = 0;
 	bool isDone_ = false; // When the user has advanced through the whole text
+
+	TextVoice *currentVoice_ = nullptr;
+
+	static constexpr int texWidth = 2048;
+	static constexpr int texHeight = 1024;
 };

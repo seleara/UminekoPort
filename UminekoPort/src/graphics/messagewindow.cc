@@ -1,9 +1,10 @@
 #include "messagewindow.h"
 
+#include "../audio/audiomanager.h"
 #include "../data/archive.h"
 #include "spritebatch.h"
 
-void MessageWindow::init(Archive &archive) {
+void MessageWindow::init(Archive &archive, AudioManager &audio) {
 	Texture msgTex;
 	msgTex.loadTxa("msgwnd.txa", archive, "msgwnd");
 	msgSprite_.setTexture(msgTex);
@@ -19,13 +20,23 @@ void MessageWindow::init(Archive &archive) {
 	text_.setWrap(1560);
 	text_.transform().position.x = 200;
 	text_.transform().position.y = 650;
+
+	audio_ = &audio;
 }
 
 void MessageWindow::addText(std::string text) {
 	done_ = false;
 	messages_.push_back(std::move(text_.convert(text)));
-	if (messages_.size() == 1)
+	if (messages_.size() == 1) {
 		text_.setText(messages_.front());
+
+		// Note: A voice line can appear in the middle of a segment of text without a key press in-between.
+		// In that case, the text display waits for the previous voice to play before continuing
+		// TODO: Implement this
+		if (text_.hasVoice()) {
+			audio_->playVoice(text_.getVoice());
+		}
+	}
 }
 
 void MessageWindow::advance() {
@@ -40,6 +51,10 @@ void MessageWindow::advance() {
 				text_.setText(messages_.front());
 			else
 				done_ = true;
+		} else {
+			if (text_.hasVoice()) {
+				audio_->playVoice(text_.getVoice());
+			}
 		}
 	}
 }

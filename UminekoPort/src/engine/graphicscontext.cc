@@ -3,7 +3,7 @@
 #include "../graphics/shader.h"
 #include "../graphics/uniformbuffer.h"
 
-GraphicsContext::GraphicsContext(Window &window, Archive &archive) : window_(window), archive_(archive) {
+GraphicsContext::GraphicsContext(Window &window, Archive &archive, AudioManager &audio) : window_(window), archive_(archive), audio_(audio) {
 	// Prev framebuffer
 	/*prevTexture_.create(window_.fboSize().x, window_.fboSize().y);
 	//glGenTextures(1, &prevTexture_.resource_->texture_);
@@ -54,7 +54,7 @@ GraphicsContext::GraphicsContext(Window &window, Archive &archive) : window_(win
 	newLayers_.resize(0x20);
 	std::copy(layers_.begin(), layers_.end(), newLayers_.begin());
 
-	msg_.init(archive);
+	msg_.init(archive, audio);
 
 	Shader gcShader, transitionShader;
 	gcShader.load("shaders/gc.glsl");

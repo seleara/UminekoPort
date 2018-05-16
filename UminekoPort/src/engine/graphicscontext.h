@@ -59,7 +59,7 @@ struct ShaderTransition {
 
 class GraphicsContext {
 public:
-	GraphicsContext(Window &window, Archive &archive);
+	GraphicsContext(Window &window, Archive &archive, AudioManager &audio);
 
 	void resize();
 
@@ -179,6 +179,7 @@ private:
 	std::vector<GraphicsLayer> newLayers_; // new state
 	Window &window_;
 	Archive &archive_;
+	AudioManager &audio_;
 
 	bool isTransitioning_ = false, useMask_ = false;
 	double transitionSpeed_ = 0;

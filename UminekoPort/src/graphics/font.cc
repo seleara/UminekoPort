@@ -88,6 +88,24 @@ void Text::setText(const std::string &text) {
 	currentSegment_ = 0;
 	isDone_ = false;
 	isDirty_ = true;
+	currentVoice_ = nullptr;
+
+	setupGlyphs();
+
+	int pushKeyCount = 0;
+	for (auto &glyph : glyphs_) {
+		if (glyph->type == TextEntryType::Voice) {
+			currentVoice_ = (TextVoice *)glyph.get();
+		}
+		if (glyph->type == TextEntryType::PushKey) {
+			if (pushKeyCount >= currentSegment_) {
+				break;
+			}
+			++pushKeyCount;
+			currentVoice_ = nullptr;
+			continue;
+		}
+	}
 }
 
 void Text::setWrap(int width) {
@@ -102,6 +120,21 @@ void Text::advance() {
 	++currentSegment_;
 	if (currentSegment_ >= segments_) {
 		isDone_ = true;
+	} else {
+		int pushKeyCount = 0;
+		for (auto &glyph : glyphs_) {
+			if (glyph->type == TextEntryType::Voice) {
+				currentVoice_ = (TextVoice *)glyph.get();
+			}
+			if (glyph->type == TextEntryType::PushKey) {
+				if (pushKeyCount >= currentSegment_) {
+					break;
+				}
+				++pushKeyCount;
+				currentVoice_ = nullptr;
+				continue;
+			}
+		}
 	}
 }
 
@@ -111,6 +144,14 @@ int Text::currentSegment() const {
 
 bool Text::done() const {
 	return isDone_;
+}
+
+bool Text::hasVoice() const {
+	return currentVoice_ != nullptr;
+}
+
+const std::string &Text::getVoice() const {
+	return currentVoice_->filename;
 }
 
 Transform &Text::transform() {
@@ -218,14 +259,7 @@ void Text::render() {
 	glDeleteVertexArrays(1, &vao);
 }
 
-void Text::renderFontTexture() {
-	static const int texWidth = 2048;
-	static const int texHeight = 1024;
-
-	if (fontTex_.id() == 0)
-		fontTex_.create(texWidth, texHeight);
-	//auto curFB = Framebuffer::getBound();
-	//fontTex_.bindDraw();
+void Text::setupGlyphs() {
 	std::map<uint16_t, glm::vec4> uvMap;
 
 	int xAdvance = 0, yAdvance = 0;
@@ -262,9 +296,13 @@ void Text::renderFontTexture() {
 			entry = std::make_unique<TextVoice>();
 			auto *ve = (TextVoice *)entry.get();
 			ve->type = TextEntryType::Voice;
-			while (text_[i] != '.') {
-				ve->filename += text_[++i];
+			ve->filename = "voice/";
+			for (;;) {
+				auto c = text_[++i];
+				if (c == '.') break;
+				ve->filename += c;
 			}
+			ve->filename += ".at3";
 			glyphs_.push_back(std::move(entry));
 			continue;
 		} else if (c == 'b') {
@@ -307,8 +345,6 @@ void Text::renderFontTexture() {
 			std::cout << std::hex << std::setw(2) << std::setfill('0') << code << std::dec << '\n';
 		}
 
-		if (inRuby) continue;
-
 		// Check if the glyph has already been rendered
 		auto iter = uvMap.find(code);
 		if (iter != uvMap.end()) {
@@ -331,18 +367,42 @@ void Text::renderFontTexture() {
 		tg.uvs.z = xAdvance + tg.fontGlyph->width;
 		tg.uvs.w = yAdvance + tg.fontGlyph->height;
 
-		fontTex_.subImage(xAdvance, yAdvance, tg.fontGlyph->width, tg.fontGlyph->height, 1, tg.fontGlyph->pixels);
-
 		xAdvance += tg.fontGlyph->width;
 
 		uvMap.insert({ code, tg.uvs });
 
-		if (curRuby) {
+		if (curRuby && inRubyKanji) {
 			curRuby->glyphs.push_back(std::move(entry));
+		} else if (curRuby && inRuby) {
+			curRuby->furigana.push_back(std::move(entry));
 		} else {
 			glyphs_.push_back(std::move(entry));
 		}
 	}
+}
+
+void Text::renderFontTexture() {
+	if (fontTex_.id() == 0)
+		fontTex_.create(texWidth, texHeight);
+
+	auto addGlyph = [&](const TextGlyph &tg) {
+		fontTex_.subImage(tg.uvs.x, tg.uvs.y, tg.uvs.z - tg.uvs.x, tg.uvs.w - tg.uvs.y, 1, tg.fontGlyph->pixels);
+	};
+
+	for (const auto &glyph : glyphs_) {
+		if (glyph->type == TextEntryType::Ruby) {
+			const auto *tr = (TextRuby *)glyph.get();
+			for (const auto &rglyph : tr->glyphs) {
+				addGlyph(*(TextGlyph *)rglyph.get());
+			}
+		} else if (glyph->type == TextEntryType::Glyph) {
+			const auto *tg = (TextGlyph *)glyph.get();
+			addGlyph(*tg);
+		}
+	}
+	//auto curFB = Framebuffer::getBound();
+	//fontTex_.bindDraw();
+	
 	/*if (curFB) {
 		curFB->bindDraw();
 	} else {

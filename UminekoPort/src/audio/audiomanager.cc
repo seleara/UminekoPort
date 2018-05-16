@@ -12,6 +12,8 @@
 AudioManager::AudioManager(Archive &archive) : archive_(archive) {
 	bgm_ = std::make_unique<AudioStream>();
 	bgm_->manager_ = this;
+	voice_ = std::make_unique<AudioStream>();
+	voice_->manager_ = this;
 	ses_.resize(0x20);
 	for (auto &se : ses_) {
 		se = std::make_unique<AudioStream>();
@@ -58,6 +60,7 @@ AudioManager::~AudioManager() {
 	}*/
 	ses_.clear();
 	bgm_.reset();
+	voice_.reset();
 	soundio_device_unref(device_);
 	soundio_destroy(soundio_);
 }
@@ -116,4 +119,14 @@ void AudioManager::stopAllSE(int frames) {
 	for (auto &se : ses_) {
 		se->fadeOut(time);
 	}
+}
+
+void AudioManager::playVoice(const std::string &filename) {
+	auto at3file = std::make_shared<AT3File>();
+	at3file->manager_ = this;
+
+	at3file->load(filename, archive_);
+	voice_->load(at3file);
+	voice_->setVolume(1.0f);
+	voice_->play();
 }

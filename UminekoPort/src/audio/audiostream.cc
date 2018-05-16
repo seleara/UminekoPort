@@ -40,9 +40,12 @@ void AudioStream::load(std::shared_ptr<AT3File> at3) {
 		}
 
 		//soundio_outstream_set_volume(outStream, masterVolume_ * volume_);
+	} else {
+		soundio_outstream_pause(outStream, true);
+		soundio_outstream_clear_buffer(outStream);
 	}
 	//soundio_outstream_pause(outStream, true);
-	//calcsoundio_outstream_clear_buffer(outStream);
+	//soundio_outstream_clear_buffer(outStream);
 	
 	at3_ = at3;
 	//looping_ = adx_[0]->looping();

@@ -7,10 +7,11 @@
 #include "font.h"
 
 class Archive;
+class AudioManager;
 
 class MessageWindow {
 public:
-	void init(Archive &archive);
+	void init(Archive &archive, AudioManager &audio);
 
 	void addText(std::string text);
 
@@ -28,6 +29,8 @@ private:
 	std::deque<std::string> messages_;
 	bool done_ = true;
 	bool visible_ = false;
+
+	AudioManager *audio_;
 
 	Text text_;
 };

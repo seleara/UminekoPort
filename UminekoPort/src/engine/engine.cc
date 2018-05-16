@@ -30,7 +30,9 @@ void Engine::run() {
 	Window window;
 	window.create(1600, 900, "Umineko Port");
 
-	GraphicsContext ctx(window, arc);
+	AudioManager audio(arc);
+
+	GraphicsContext ctx(window, arc, audio);
 
 	Shader shader;
 	shader.load("shaders/2d.glsl");
@@ -45,8 +47,6 @@ void Engine::run() {
 	auto mvp2d = UniformBuffer::uniformBuffer<Matrices>("mvp2d");
 	mvp2d->projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f);
 	mvp2d.update();
-
-	AudioManager audio(arc);
 
 	Script script(ctx, audio, false);
 	std::thread scriptThread([&]() {
