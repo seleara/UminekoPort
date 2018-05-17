@@ -45,6 +45,7 @@ public:
 	bool isOpen() const;
 	bool pollEvents(WindowEvent &event);
 	void clear(const glm::vec4 &color);
+	void blitFramebuffer();
 	void swapBuffers();
 	void setTitle(const std::string &title);
 	const glm::ivec2 fboSize() const {

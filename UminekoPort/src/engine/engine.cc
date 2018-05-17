@@ -128,11 +128,14 @@ void Engine::run() {
 
 		window.clear(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		ctx.render();
+		window.blitFramebuffer();
 
+		Framebuffer::bindDrawNull();
 		ImGui_ImplGlfwGL3_NewFrame();
 		audio.drawDebug();
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+		window.bindFramebuffer();
 
 		window.swapBuffers();
 	}

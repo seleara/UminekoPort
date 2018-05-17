@@ -19,10 +19,13 @@ public:
 
 	Texture &texture();
 private:
+	friend class Window;
+
 	static bool checkFramebufferStatus();
 
 	Texture texture_;
 	GLuint fbo_, depthRb_;
 
 	static Framebuffer *current_, *currentRead_;
+	static glm::ivec2 backBufferSize_;
 };

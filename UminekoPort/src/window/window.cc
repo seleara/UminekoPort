@@ -8,6 +8,8 @@ void Window::create(int width, int height, const std::string &title) {
 	size_.x = width;
 	size_.y = height;
 
+	Framebuffer::backBufferSize_ = size_;
+
 	if (!glfwInit()) {
 		std::cerr << "Unable to initialize GLFW." << std::endl;
 		throw std::runtime_error("Unable to initialize GLFW.");
@@ -56,7 +58,7 @@ void Window::create(int width, int height, const std::string &title) {
 	//glEnable(GL_CULL_FACE);
 	//glCullFace(GL_BACK);
 
-	fboSize_ = (width <= height) ? glm::vec2(width, width * (9.0 / 16.0)) : glm::vec2(height * (16.0 / 9.0), height);
+	fboSize_ = ((width / (double)height) < (16.0 / 9.0)) ? glm::vec2(width, width * (9.0 / 16.0)) : glm::vec2(height * (16.0 / 9.0), height);
 
 	// Singlesampling
 	/*glGenTextures(1, &singlesampleTex_);
@@ -97,7 +99,7 @@ void Window::clear(const glm::vec4 &color) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Window::swapBuffers() {
+void Window::blitFramebuffer() {
 	//glfwSwapBuffers(window_);
 	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);   // Make sure no FBO is set as the draw framebuffer
 	Framebuffer::bindDrawNull();
@@ -105,31 +107,34 @@ void Window::swapBuffers() {
 	//if (previousMultisampling_) {
 	//	glBindFramebuffer(GL_READ_FRAMEBUFFER, multisampleFbo_); // Make sure your multisampled FBO is the read framebuffer
 	//} else {
-		//glBindFramebuffer(GL_READ_FRAMEBUFFER, singlesampleFbo_);
-		singlesampleFbo_.bindRead();
+	//glBindFramebuffer(GL_READ_FRAMEBUFFER, singlesampleFbo_);
+	singlesampleFbo_.bindRead();
 	//}
 	glDrawBuffer(GL_BACK);                       // Set the back buffer as the draw buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	auto wx = size_.x / 2.0 - fboSize_.x / 2.0;
 	auto wy = size_.y / 2.0 - fboSize_.y / 2.0;
-	wx = 0;
-	wy = 0;
-	glBlitFramebuffer(0, 0, static_cast<GLint>(fboSize_.x), static_cast<GLint>(fboSize_.y), wx, wy, static_cast<GLint>(wx + fboSize_.x), static_cast<GLint>(wy + fboSize_.y), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-	glfwSwapBuffers(window_);
+	auto wx2 = wx + fboSize_.x;
+	auto wy2 = wy + fboSize_.y;
+	glViewport(0, 0, size_.x, size_.y);
+	glBlitFramebuffer(0, 0, static_cast<GLint>(fboSize_.x), static_cast<GLint>(fboSize_.y), wx, wy, wx2, wy2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 	/*bool multisampling = Config::instance().multisampling();
 	if (multisampling != previousMultisampling_) {
-		previousMultisampling_ = multisampling;
+	previousMultisampling_ = multisampling;
 	}*/
 
 	//if (multisampling) {
 	//	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, multisampleFbo_);
 	//} else {
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
+	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
 	Framebuffer::bindReadNull();
 	singlesampleFbo_.bindDraw();
 	//}
+}
+
+void Window::swapBuffers() {
+	glfwSwapBuffers(window_);
 }
 
 void Window::setTitle(const std::string &title) {
@@ -151,13 +156,14 @@ bool Window::popEvent(WindowEvent &event) {
 
 void Window::resizeCallback(int width, int height) {
 	size_ = glm::vec2(width, height);
-	fboSize_ = (width <= height) ? glm::vec2(width, width * (9.0 / 16.0)) : glm::vec2(height * (16.0 / 9.0), height);
+	Framebuffer::backBufferSize_ = size_;
+	fboSize_ = ((width / (double)height) < (16.0 / 9.0)) ? glm::vec2(width, width * (9.0 / 16.0)) : glm::vec2(height * (16.0 / 9.0), height);
 	WindowEvent e;
 	e.type = WindowEvent::Type::Resized;
 	e.size = size_;
 
 	//glViewport(0, 0, width, height);
-	glViewport(0, 0, fboSize_.x, fboSize_.y);
+	//glViewport(0, 0, fboSize_.x, fboSize_.y);
 
 	//int maxSamples;
 	//glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
