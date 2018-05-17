@@ -100,37 +100,20 @@ void Window::clear(const glm::vec4 &color) {
 }
 
 void Window::blitFramebuffer() {
-	//glfwSwapBuffers(window_);
-	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);   // Make sure no FBO is set as the draw framebuffer
 	Framebuffer::bindDrawNull();
-
-	//if (previousMultisampling_) {
-	//	glBindFramebuffer(GL_READ_FRAMEBUFFER, multisampleFbo_); // Make sure your multisampled FBO is the read framebuffer
-	//} else {
-	//glBindFramebuffer(GL_READ_FRAMEBUFFER, singlesampleFbo_);
 	singlesampleFbo_.bindRead();
-	//}
-	glDrawBuffer(GL_BACK);                       // Set the back buffer as the draw buffer
+
+	glDrawBuffer(GL_BACK); // Set the back buffer as the draw buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	auto wx = size_.x / 2.0 - fboSize_.x / 2.0;
 	auto wy = size_.y / 2.0 - fboSize_.y / 2.0;
 	auto wx2 = wx + fboSize_.x;
 	auto wy2 = wy + fboSize_.y;
-	glViewport(0, 0, size_.x, size_.y);
 	glBlitFramebuffer(0, 0, static_cast<GLint>(fboSize_.x), static_cast<GLint>(fboSize_.y), wx, wy, wx2, wy2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-	/*bool multisampling = Config::instance().multisampling();
-	if (multisampling != previousMultisampling_) {
-	previousMultisampling_ = multisampling;
-	}*/
-
-	//if (multisampling) {
-	//	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, multisampleFbo_);
-	//} else {
-	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
 	Framebuffer::bindReadNull();
 	singlesampleFbo_.bindDraw();
-	//}
 }
 
 void Window::swapBuffers() {

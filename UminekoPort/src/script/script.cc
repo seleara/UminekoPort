@@ -181,7 +181,9 @@ void Script::command8D(BinaryReader &br, Archive &archive) {
 	}
 	auto next = br.read<uint8_t>();
 	next &= ~0x80;
-	if (next == 0x02) { // fade
+	if (unknown != 0) {
+		// ...
+	} else if (next == 0x02) { // fade
 		auto frames = getVariable(br.read<uint16_t>());
 		ctx_.transition(frames);
 		pause();
@@ -192,11 +194,12 @@ void Script::command8D(BinaryReader &br, Archive &archive) {
 		pause();
 	} else if (next == 0x0C)
 		br.skip(4);
-	else if (next == 0x0E)
+	else if (next == 0x0E) {
 		br.skip(6);
+	}
 
-	if (unknown != 0)
-		br.skip(2);
+	//if (unknown != 0)
+	//	br.skip(2);
 	ctx_.applyLayers();
 }
 

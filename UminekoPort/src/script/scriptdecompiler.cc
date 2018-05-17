@@ -523,7 +523,11 @@ FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) co
 	}
 	auto next = br.read<uint8_t>();
 	next &= ~0x80;
-	if (next == 0x00) {
+	if (unknown != 0) {
+		br.skip(-3);
+		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 2), br);
+		ss << ", " << parseArgument(arg(SDType::Bytes, 1), br);
+	} else if (next == 0x00) {
 		br.skip(-1);
 		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
 	} else if (next == 0x01) { // ???
@@ -552,22 +556,29 @@ FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) co
 		ss << ", " << parseArgument(arg(SDType::UInt16), br);
 		ss << ", " << parseArgument(arg(SDType::UInt16), br);
 	} else if (next == 0x0E) {
-		br.skip(-1);
-		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
-		ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		if (unknown == 0) {
+			br.skip(-1);
+			ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
+			ss << ", " << parseArgument(arg(SDType::UInt16), br);
+			ss << ", " << parseArgument(arg(SDType::UInt16), br);
+			ss << ", " << parseArgument(arg(SDType::UInt16), br);
+		} else {
+			//br.skip(-1);
+			//ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
+			//ss << ", " << parseArgument(arg(SDType::Bytes, 3), br);
+		}
 	} else {
 		br.skip(-1);
 		ss << getName(cmd.opcode) << "(" << parseArgument(arg(SDType::Bytes, 1), br);
 	}
-	if (unknown != 0) {
+	
+	/*if (unknown != 0) {
 		ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
-	}
+	}*/
 	ss << ")";
-	if (unknown != 0) {
-		ss << " // " << (int)unknown << ", " << (int)unknown2;
-	}
+	//if (unknown != 0) {
+	//	ss << " // " << (int)unknown << ", " << (int)unknown2;
+	//}
 	fi.line = ss.str();
 	return fi;
 }
@@ -721,6 +732,8 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 				ss << ", " << parseArgument(arg(SDType::UInt16), br);
 			}
 			ss << ")";
+		} else if (type == 7) { // ???
+			ss << ", " << parseArgument(arg(SDType::UInt16), br);
 		} else {
 			ss << ", UNKNOWN)";
 		}
@@ -769,9 +782,9 @@ FuncInfo ScriptDecompiler::command_C7(const SDCommand &cmd, BinaryReader &br) co
 	if (unk2 == 0) {
 		//auto unk3 = br.read<uint8_t>();
 		//ss << ", " << (int)unk3;
-		if (Engine::game == "chiru") { // why? same script version (presumably)
+		/*if (Engine::game == "chiru") { // why? same script version (presumably)
 			ss << ", " << parseArgument(arg(SDType::Bytes, 2), br);
-		}
+		}*/
 	} else if (unk2 == 1) {
 		ss << ", " << parseArgument(arg(SDType::Int16), br);
 	} else if (unk2 == 2) {

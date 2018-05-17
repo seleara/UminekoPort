@@ -15,7 +15,7 @@
 
 #include <thread>
 
-const std::string Engine::game = "umi";
+const std::string Engine::game = "chiru";
 
 void Engine::run() {
 	Archive arc;
