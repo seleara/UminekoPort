@@ -47,16 +47,16 @@ void Engine::run() {
 	mvp2d->projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f);
 	mvp2d.update();
 
-	Script script(ctx, audio, false);
-	std::thread scriptThread([&]() {
-		script.load("main.snr", arc);
-	});
-
 	if (game == "umi" || game == "chiru") {
 		Font::global().load("default.fnt", arc);
 	} else if (game == "higu") {
 		Font::global().load("gothic.fnt", arc);
 	}
+
+	Script script(ctx, audio, false);
+	std::thread scriptThread([&]() {
+		script.load("main.snr", arc);
+	});
 
 	bool skipping = false;
 

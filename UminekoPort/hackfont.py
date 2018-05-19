@@ -28,6 +28,7 @@ def main():
 			newdata[dstOffset:dstOffset + srcBytes] = srcData
 
 		#replace(133, 98)
+		replace(1, 98)
 		#update(98, 59, 0x03)
 		#update(98, 60, 0x03)
 		#update(98, 26, 0x04)

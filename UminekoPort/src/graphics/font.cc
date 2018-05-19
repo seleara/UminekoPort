@@ -40,24 +40,26 @@ void Font::load(const std::string &filename, Archive &archive) {
 	}
 
 	for (int i = 0; i < glyphCount; ++i) {
-		br.seekg(offsets[i]);
+		//std::cout << "Reading glyph #" << i << "\n===================\n";
+		//br.seekg(offsets[i]);
+		uint8_t *readPtr = data.data() + offsets[i];
 
 		auto &glyph = glyphs_.emplace_back();
-		glyph.xOffset = br.read<uint8_t>();
-		glyph.yOffset = br.read<uint8_t>();
-		glyph.width = br.read<uint8_t>();
-		glyph.height = br.read<uint8_t>();
-		glyph.xAdvance = br.read<uint8_t>();
-		glyph.yAdvance = br.read<uint8_t>();
+		glyph.xOffset = *(readPtr++);//br.read<uint8_t>();
+		glyph.yOffset = *(readPtr++);
+		glyph.width = *(readPtr++);
+		glyph.height = *(readPtr++);
+		glyph.xAdvance = *(readPtr++);
+		glyph.yAdvance = *(readPtr++);
 
-		glyph.compressedSize = br.read<uint16_t>();
-		//glyph.unk2 = br.read<uint8_t>();
-		glyph.unk3 = br.read<uint8_t>();
+		const auto compressedLow = *(readPtr++);
+		glyph.compressedSize = ((*(readPtr++) << 8) & 0xff00) | (compressedLow & 0xff);
 
 		glyph.pixels.resize(glyph.width * glyph.height);
 
-		int pixelPtr = 0;
-		uint8_t cache = br.read<uint8_t>();
+		if (glyph.compressedSize == 0) continue;
+
+		/*uint8_t cache = br.read<uint8_t>();
 		int nibbleCount = 0;
 		auto getNibble = [&]() -> int {
 			if (nibbleCount == 2) {
@@ -77,13 +79,18 @@ void Font::load(const std::string &filename, Archive &archive) {
 			auto high = getNibble();
 			auto low = getNibble();
 			return ((high << 4) & 0xf0) | (low & 0xf);
-		};
+		};*/
 
 		auto expandNibble = [](int nibble) -> uint8_t {
 			return static_cast<uint8_t>(((nibble << 4) & 0xf0) | (nibble & 0xf));
 		};
 
-		for (int j = 0; j < glyph.compressedSize; ++j) {
+		std::vector<uint8_t> literals;
+		auto modWidth = (glyph.width % 2 == 0) ? glyph.width : (glyph.width + 1);
+		literals.resize(modWidth * glyph.height / 2);
+		int bytesRead = 0, bytesWritten = 0;
+		uint8_t *litPtr = literals.data();
+		while (bytesRead < glyph.compressedSize) {
 			/*int toCopy = getNibble();
 			int toRead = getNibble();
 			if (toRead == 0) toRead = 16;
@@ -93,16 +100,77 @@ void Font::load(const std::string &filename, Archive &archive) {
 			for (int k = 0; k < toCopy; ++k) {
 				// ???
 			}*/
-			uint8_t ctrl = getByte();
+			auto ctrl = *(readPtr++); //br.read<uint8_t>();
+			++bytesRead;
+			/*std::cout << "[";
+			for (int i = 0; i < 8; ++i) {
+				std::cout << (int)((ctrl >> (7 - i)) & 1) << (i < 7 ? " " : "");
+			}
+			std::cout << "] ";*/
 			for (int i = 0; i < 8; ++i) {
 				auto type = (ctrl >> i) & 0x1;
 				if (type == 0) { // Literal byte, encoding 2 pixels as 2 4-bit values
-					glyph.pixels[pixelPtr++] = expandNibble(getNibble());
-					glyph.pixels[pixelPtr++] = expandNibble(getNibble());
+					if ((bytesRead + 1) > glyph.compressedSize) break; // The compressed data can end prematurely
+					auto val = *(readPtr++); // br.read<uint8_t>();
+					//literals.push_back(val);
+					*(litPtr++) = val;
+					++bytesRead;
+					++bytesWritten;
+					//std::cout << "(" << std::hex << std::setw(2) << std::setfill('0') << (int)val << std::dec << ") ";
+					//glyph.pixels[pixelPtr++] = expandNibble((val >> 4) & 0xf);
+					//glyph.pixels[pixelPtr++] = expandNibble(val & 0xf);
 				} else {
-					// ...
+					if ((bytesRead + 2) > glyph.compressedSize) break; // The compressed data can end prematurely
+					const auto backRefLow = *(readPtr++);
+					auto backRef = ((*(readPtr++) << 8) & 0xff00) | (backRefLow & 0xff); //br.read<uint16_t>();
+					//std::cout << "<" << std::hex << std::setw(4) << std::setfill('0') << backRef << std::dec << "> ";
+					// The offset is a bit weird. It is 12 bits in total, with the lower 8 bits being bits 8-15 of the uint16 value.
+					// The remaining upper 4 bits are bits 4-7.
+					//int offset = ((backRef >> 8) & 0xff) | (((backRef >> 4) & 0xf) << 8);
+					//int count = (backRef & 0xf) + 3;
+					//int offset = (backRef >> 8) & 0xff;
+					//int offset = ((backRef >> 8) & 0xff) + 1;
+					//int count = (backRef & 0xff) + 3;
+					int offset = (((backRef >> 8) & 0xff) | (((backRef >> 6) & 0x3) << 8)) + 1;
+					int count = (backRef & 0x3f) + 3;
+					int absOffset = bytesWritten - offset;
+					bytesRead += 2;
+					for (int i = 0; i < count; ++i) {
+						//if (absOffset + i >= literals.size()) break;
+						auto copyVal = literals[absOffset + i];//glyph.pixels[absOffset + i - 1];
+						//glyph.pixels[pixelPtr] = copyVal;
+						//literals.push_back(copyVal);
+						*(litPtr++) = copyVal;
+						++bytesWritten;
+						//++pixelPtr;
+					}
 				}
 			}
+			//std::cout << "\n";
+		}
+
+		int nibbleCount = 0;
+		int literalIndex = 0;
+		uint8_t cache = literals[0];
+		auto getNibble = [&]() -> int {
+			if (nibbleCount == 2) {
+				cache = literals[++literalIndex];
+				nibbleCount = 0;
+			}
+			if (nibbleCount == 0) {
+				++nibbleCount;
+				return (cache >> 4) & 0xf;
+			} else if (nibbleCount == 1) {
+				++nibbleCount;
+				return cache & 0xf;
+			}
+		};
+
+		int pixelPtr = 0;
+		for (int i = 0; i < glyph.pixels.size(); ++i) {
+			glyph.pixels[pixelPtr++] = expandNibble(getNibble());
+			if (glyph.width % 2 != 0 && pixelPtr % glyph.width == 0)
+				getNibble();
 		}
 
 		/*for (int y = 0; y < glyph.height; ++y) {
@@ -431,7 +499,9 @@ void Text::renderFontTexture() {
 		fontTex_.create(texWidth, texHeight);
 
 	auto addGlyph = [&](const TextGlyph &tg) {
-		fontTex_.subImage(tg.uvs.x, tg.uvs.y, tg.uvs.z - tg.uvs.x, tg.uvs.w - tg.uvs.y, 1, tg.fontGlyph->pixels);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+ 		fontTex_.subImage(tg.uvs.x, tg.uvs.y, tg.fontGlyph->width, tg.fontGlyph->height, 1, tg.fontGlyph->pixels);
 	};
 
 	for (const auto &glyph : glyphs_) {
