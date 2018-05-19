@@ -235,6 +235,8 @@ private:
 				jump(offset);
 			}
 			break;
+		case 6: // ???
+			break;
 		default:
 			throw std::runtime_error("Unsupported jump_if operation: " + std::to_string(operation));
 		}
@@ -295,6 +297,9 @@ private:
 		auto count = br.read<uint8_t>() & ~0x80;
 		br.skip(2 * count); // ???
 	}
+	void command81(BinaryReader &br, Archive &archive) {
+		br.skip(4);
+	}
 	void command83(BinaryReader &br, Archive &archive) {
 		auto frames = br.read<uint16_t>();
 		ctx_.wait(frames);
@@ -313,11 +318,8 @@ private:
 		if (shouldPause)
 			pause();
 	}
-	void command87(BinaryReader &br, Archive &archive) {
-		auto unk = br.read<int16_t>(); // ???
-	}
-	void command88(BinaryReader &br, Archive &archive) {
-	}
+	void command87(BinaryReader &br, Archive &archive);
+	void command88(BinaryReader &br, Archive &archive);
 	void command89(BinaryReader &br, Archive &archive) {
 		ctx_.hideMessage();
 	}

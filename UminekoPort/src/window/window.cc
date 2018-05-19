@@ -116,6 +116,24 @@ void Window::blitFramebuffer() {
 	singlesampleFbo_.bindDraw();
 }
 
+void Window::setFullscreen(bool fullscreen) {
+	if (fullscreen == isFullscreen()) {
+		return;
+	}
+	if (fullscreen) {
+		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+		glfwGetWindowPos(window_, &windowPos_.x, &windowPos_.y);
+		glfwGetWindowSize(window_, &windowSize_.x, &windowSize_.y);
+		glfwSetWindowMonitor(window_, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
+	} else {
+		glfwSetWindowMonitor(window_, nullptr, windowPos_.x, windowPos_.y, windowSize_.x, windowSize_.y, 0);
+	}
+}
+
+bool Window::isFullscreen() {
+	return glfwGetWindowMonitor(window_) != nullptr;
+}
+
 void Window::swapBuffers() {
 	glfwSwapBuffers(window_);
 }

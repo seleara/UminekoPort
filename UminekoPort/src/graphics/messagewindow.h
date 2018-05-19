@@ -21,6 +21,8 @@ public:
 	void setVisible(bool visible);
 	bool visible() const;
 
+	int currentSegment() const;
+
 	void render();
 private:
 	friend class GraphicsContext;

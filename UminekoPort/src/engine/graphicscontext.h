@@ -114,6 +114,25 @@ public:
 
 	void advance() {
 		msg_.advance();
+		if (isWaitingForMessageSegment_) {
+			if (waitForMessageSegment_ == -1 && msg_.done()) {
+				doneWaitingForMessageSegment_ = true;
+				isWaitingForMessageSegment_ = false;
+			} else if (waitForMessageSegment_ + 1 == msg_.currentSegment()) {
+				doneWaitingForMessageSegment_ = true;
+				isWaitingForMessageSegment_ = false;
+			}
+		}
+	}
+
+	void waitForMessageSegment(int segment) {
+		isWaitingForMessageSegment_ = true;
+		doneWaitingForMessageSegment_ = false;
+		waitForMessageSegment_ = segment;
+	}
+
+	bool doneWaitingForMessageSegment() const {
+		return doneWaitingForMessageSegment_;
 	}
 
 	bool messageDone() const {
@@ -197,4 +216,7 @@ private:
 
 	bool waiting_ = false;
 	double waitTime_ = 0.0;
+
+	bool isWaitingForMessageSegment_ = false, doneWaitingForMessageSegment_ = false;
+	int waitForMessageSegment_ = -1;
 };

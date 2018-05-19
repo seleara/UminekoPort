@@ -55,7 +55,10 @@ void ScriptDecompiler::setup() {
 	commands_[0x64] = { 0x64, { arg(SDType::Bytes, 1) } }; // ???
 	commands_[0x80] = { 0x80, { arg(SDType::UInt16) } }; // special case
 	commands_[0x81] = { 0x81, { arg(SDType::UInt16), arg(SDType::Int16) } };
-	commands_[0x82] = { 0x82, { arg(SDType::UInt16) } };
+	if (script_.version() == 0x01)
+		commands_[0x82] = { 0x82, { arg(SDType::UInt16), arg(SDType::UInt16) } };
+	else
+		commands_[0x82] = { 0x82, { arg(SDType::UInt16) } };
 	commands_[0x83] = { 0x83, { arg(SDType::Bytes, 2) } }; // special case
 	commands_[0x85] = { 0x85, { arg(SDType::Bytes, 4) } };
 	commands_[0x86] = { 0x86, { arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::String16) } };
@@ -105,6 +108,8 @@ void ScriptDecompiler::setup() {
 	commands_[0xC9] = { 0xC9, {} };
 	commands_[0xCA] = { 0xCA, {} }; // special case
 	commands_[0xCB] = { 0xCB, { arg(SDType::Bytes, 2) } };
+	commands_[0xCD] = { 0xCD, { arg(SDType::Bytes, 2), arg(SDType::Bytes, 2) } };
+	commands_[0xCE] = { 0xCE, { arg(SDType::Bytes, 2), arg(SDType::Bytes, 2) } };
 	commands_[0xD2] = { 0xD2, { arg(SDType::Bytes, 1) } };
 
 	specialCases_.resize(0x100, nullptr);
@@ -727,6 +732,7 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 			if (unk3 == 0x2D) {
 				ss << ", " << parseArgument(arg(SDType::Bytes, 8), br);
 			} else { // higu?
+				spriteId = br.read<uint16_t>();
 				ss << ", " << spriteId;
 				ss << ", " << parseArgument(arg(SDType::UInt16), br);
 				ss << ", " << parseArgument(arg(SDType::UInt16), br);

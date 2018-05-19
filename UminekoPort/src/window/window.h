@@ -55,6 +55,8 @@ public:
 		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, singlesampleFbo_);
 		singlesampleFbo_.bindDraw();
 	}
+	void setFullscreen(bool fullscreen);
+	bool isFullscreen();
 protected:
 	void pushEvent(WindowEvent &&event);
 	bool popEvent(WindowEvent &event);
@@ -150,6 +152,9 @@ private:
 	glm::ivec2 size_;
 	glm::ivec2 fboSize_;
 	glm::vec2 mousePosition_;
+
+	glm::ivec2 windowSize_;
+	glm::ivec2 windowPos_;
 
 	// Single sample rendering
 	//GLuint singlesampleTex_;

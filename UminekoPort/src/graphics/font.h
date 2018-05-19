@@ -17,7 +17,8 @@ struct Glyph {
 	uint8_t xAdvance;
 	uint8_t yAdvance;
 
-	uint8_t unk1, unk2, unk3;
+	uint16_t compressedSize;
+	uint8_t /*unk2,*/ unk3;
 
 	std::vector<uint8_t> pixels;
 };

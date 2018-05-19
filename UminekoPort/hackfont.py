@@ -18,24 +18,41 @@ def main():
 
 		def setData(index, data):
 			offset = getOffset(index)
-			newData[offset + 6:offset + 6 + len(data)] = data
+			newdata[offset + 6:offset + 6 + len(data)] = data
 
+		def replace(src, dst):
+			srcOffset = getOffset(src)
+			srcBytes = 8 + ((ord(newdata[srcOffset + 6]) & 0xff) | ((ord(newdata[srcOffset + 7]) << 8) & 0xff00))
+			srcData = newdata[srcOffset:srcOffset + srcBytes]
+			dstOffset = getOffset(dst)
+			newdata[dstOffset:dstOffset + srcBytes] = srcData
+
+		#replace(133, 98)
+		#update(98, 59, 0x03)
+		#update(98, 60, 0x03)
+		#update(98, 26, 0x04)
+		#update(98, 65, 0x02)
+		#update(98, 56, 0x67)
+		#update(98, 8, 0xf0)
 		#update(96, 7, 0xff)
 		#update(96, 8, 0xff)
 		#update(96, 9, 0xff)
 		#update(96, 10, 0xff)
-		update(98, 8, 0x90)
+		#update(98, 8, 0x00)
 		#update(98, 15, 0x2c)
 		#update(98, 16, 0x01)
 		#for i in range(10):
 		#	update(98, 6 + i, 0xff)
 		#update(3, 0, 100)
 		#for i in range(8180):
-		#	offset = getOffset(i)
-		#	update(i, 9, 0x65)
+		#	update(i, 7, i % 255)
 
 		with open("newfont.fnt", "wb") as nf:
 			nf.write(bytearray(newdata))
+
+		with open("data/DATA.ROM", "r+b") as rom:
+			rom.seek(0x149000)
+			rom.write(bytearray(newdata))
 
 if __name__ == '__main__':
 	main()

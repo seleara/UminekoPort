@@ -2,11 +2,12 @@
 
 #include "../audio/audiomanager.h"
 #include "../data/archive.h"
+#include "../engine/engine.h"
 #include "spritebatch.h"
 
 void MessageWindow::init(Archive &archive, AudioManager &audio) {
 	Texture msgTex;
-	msgTex.loadTxa("msgwnd.txa", archive, "msgwnd");
+	if (Engine::game != "higu") msgTex.loadTxa("msgwnd.txa", archive, "msgwnd");
 	msgSprite_.setTexture(msgTex);
 	msgSprite_.textureRect = glm::ivec4(251, 15, 1637, 277);
 	//msgSprite_.textureRect = glm::vec4(0.1523f, 0.0486f, 0.9933f, 0.9618f);
@@ -69,6 +70,10 @@ void MessageWindow::setVisible(bool visible) {
 
 bool MessageWindow::visible() const {
 	return visible_;
+}
+
+int MessageWindow::currentSegment() const {
+	return text_.currentSegment();
 }
 
 void MessageWindow::render() {

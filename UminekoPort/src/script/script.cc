@@ -21,6 +21,7 @@ Script::Script(GraphicsContext &ctx, AudioManager &audio, bool commandTest) : ct
 	commands_[0x4D] = &Script::command4D;
 	commands_[0x4E] = &Script::command4E;
 	commands_[0x80] = &Script::command80;
+	commands_[0x81] = &Script::command81;
 	commands_[0x83] = &Script::command83;
 	commands_[0x85] = &Script::command85;
 	commands_[0x86] = &Script::command86;
@@ -170,6 +171,16 @@ void Script::executeCommand(BinaryReader &br, Archive &archive) {
 	}
 	//std::cout << "CB 0x" << std::hex << (int)cmd << std::dec << "\n";
 	(this->*cf)(br, archive);
+}
+
+void Script::command87(BinaryReader &br, Archive &archive) {
+	auto segment = br.read<int16_t>();
+	ctx_.waitForMessageSegment(segment);
+	pause();
+}
+
+void Script::command88(BinaryReader &br, Archive &archive) {
+	//ctx_.returnToMessage();
 }
 
 void Script::command8D(BinaryReader &br, Archive &archive) {

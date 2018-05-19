@@ -4,45 +4,7 @@
 #include "../graphics/uniformbuffer.h"
 
 GraphicsContext::GraphicsContext(Window &window, Archive &archive, AudioManager &audio) : window_(window), archive_(archive), audio_(audio) {
-	// Prev framebuffer
-	/*prevTexture_.create(window_.fboSize().x, window_.fboSize().y);
-	//glGenTextures(1, &prevTexture_.resource_->texture_);
-	//glBindTexture(GL_TEXTURE_RECTANGLE, prevTexture_.resource_->texture_);
-	//glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	//prevTexture_.resource_->size_.x = window_.fboSize().x;
-	//prevTexture_.resource_->size_.y = window_.fboSize().y;
-
-	glGenFramebuffers(1, &prevFramebuffer_);
-	glBindFramebuffer(GL_FRAMEBUFFER, prevFramebuffer_);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, prevTexture_.resource_->texture_, 0);
-
-	glGenRenderbuffers(1, &prevDepthRb_);
-	glBindRenderbuffer(GL_RENDERBUFFER, prevDepthRb_);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_.fboSize().x, window_.fboSize().y);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, prevDepthRb_);
-
-	if (!window_.checkFramebufferStatus()) throw std::runtime_error("Framebuffer error.");*/
-
 	prevFramebuffer_.create(window_.fboSize().x, window_.fboSize().y);
-
-	// Next framebuffer
-	/*nextTexture_.create(window_.fboSize().x, window_.fboSize().y);
-	//glGenTextures(1, &nextTexture_.resource_->texture_);
-	//glBindTexture(GL_TEXTURE_RECTANGLE, nextTexture_.resource_->texture_);
-	//glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	//nextTexture_.resource_->size_.x = window_.fboSize().x;
-	//nextTexture_.resource_->size_.y = window_.fboSize().y;
-
-	glGenFramebuffers(1, &nextFramebuffer_);
-	glBindFramebuffer(GL_FRAMEBUFFER, nextFramebuffer_);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, nextTexture_.resource_->texture_, 0);
-
-	glGenRenderbuffers(1, &nextDepthRb_);
-	glBindRenderbuffer(GL_RENDERBUFFER, nextDepthRb_);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_.fboSize().x, window_.fboSize().y);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, nextDepthRb_);
-
-	if (!window_.checkFramebufferStatus()) throw std::runtime_error("Framebuffer error.");*/
 
 	nextFramebuffer_.create(window_.fboSize().x, window_.fboSize().y);
 
@@ -70,20 +32,6 @@ GraphicsContext::GraphicsContext(Window &window, Archive &archive, AudioManager 
 }
 
 void GraphicsContext::resize() {
-	/*glBindRenderbuffer(GL_RENDERBUFFER, prevDepthRb_);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_.fboSize().x, window_.fboSize().y);
-	glBindTexture(GL_TEXTURE_RECTANGLE, prevTexture_.id());
-	glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	prevTexture_.resource_->size_.x = window_.fboSize().x;
-	prevTexture_.resource_->size_.y = window_.fboSize().y;
-
-	glBindRenderbuffer(GL_RENDERBUFFER, nextDepthRb_);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_.fboSize().x, window_.fboSize().y);
-	glBindTexture(GL_TEXTURE_RECTANGLE, nextTexture_.id());
-	glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA8, window_.fboSize().x, window_.fboSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	nextTexture_.resource_->size_.x = window_.fboSize().x;
-	nextTexture_.resource_->size_.y = window_.fboSize().y;*/
-
 	prevFramebuffer_.resize(window_.fboSize().x, window_.fboSize().y);
 	nextFramebuffer_.resize(window_.fboSize().x, window_.fboSize().y);
 }

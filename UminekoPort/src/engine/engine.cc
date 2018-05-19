@@ -15,7 +15,7 @@
 
 #include <thread>
 
-const std::string Engine::game = "chiru";
+const std::string Engine::game = "umi";
 
 void Engine::run() {
 	Archive arc;
@@ -23,9 +23,10 @@ void Engine::run() {
 		arc.open("data/DATA.ROM");
 	else if (game == "chiru")
 		arc.open("chiru_data/DATA.ROM");
-	else if (game == "higu")
+	else if (game == "higu") {
 		arc.open("higurashi_data/DATA.ROM");
-	//arc.explore();
+		arc.explore();
+	}
 
 	Window window;
 	window.create(1600, 900, "Umineko Port");
@@ -34,13 +35,11 @@ void Engine::run() {
 
 	GraphicsContext ctx(window, arc, audio);
 
-	Shader shader;
-	shader.load("shaders/2d.glsl");
-	shader.saveCache("2d");
-
-	Shader textShader;
-	shader.load("shaders/text.glsl");
-	shader.saveCache("text");
+	Shader preloadShader;
+	preloadShader.load("shaders/2d.glsl");
+	preloadShader.saveCache("2d");
+	preloadShader.load("shaders/text.glsl");
+	preloadShader.saveCache("text");
 
 	UniformBuffer::createUniformBuffer<Matrices>("mvp2d", 1);
 	UniformBuffer::bindUniformBuffer("mvp2d");
@@ -53,7 +52,11 @@ void Engine::run() {
 		script.load("main.snr", arc);
 	});
 
-	Font::global().load("default.fnt", arc);
+	if (game == "umi" || game == "chiru") {
+		Font::global().load("default.fnt", arc);
+	} else if (game == "higu") {
+		Font::global().load("gothic.fnt", arc);
+	}
 
 	bool skipping = false;
 
@@ -66,6 +69,9 @@ void Engine::run() {
 				ctx.resize();
 			}
 			if (event.type == WindowEvent::Type::KeyReleased) {
+				if (event.key == KeyCode::F) {
+					window.setFullscreen(!window.isFullscreen());
+				}
 				if (event.key == KeyCode::S) {
 					skipping = false;
 				}
@@ -89,6 +95,8 @@ void Engine::run() {
 				if (event.key == KeyCode::Space || event.key == KeyCode::Return) {
 					ctx.advance();
 					if (ctx.messageDone()) {
+						script.resume();
+					} else if (ctx.doneWaitingForMessageSegment()) {
 						script.resume();
 					}
 				}

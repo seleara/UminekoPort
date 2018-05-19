@@ -24,7 +24,7 @@ void Font::load(const std::string &filename, Archive &archive) {
 	BinaryReader br((const char *)data.data(), data.size());
 	
 	auto magic = br.readString(4);
-	if (magic != "FNT3") {
+	if ((magic != "FNT3") && (magic != "FNT4")) {
 		throw std::runtime_error("File is not a valid font file.");
 	}
 
@@ -50,21 +50,66 @@ void Font::load(const std::string &filename, Archive &archive) {
 		glyph.xAdvance = br.read<uint8_t>();
 		glyph.yAdvance = br.read<uint8_t>();
 
-		glyph.unk1 = br.read<uint8_t>();
-		glyph.unk2 = br.read<uint8_t>();
+		glyph.compressedSize = br.read<uint16_t>();
+		//glyph.unk2 = br.read<uint8_t>();
 		glyph.unk3 = br.read<uint8_t>();
 
 		glyph.pixels.resize(glyph.width * glyph.height);
 
-		for (int j = 0; j < glyph.unk3; ++j) {
+		int pixelPtr = 0;
+		uint8_t cache = br.read<uint8_t>();
+		int nibbleCount = 0;
+		auto getNibble = [&]() -> int {
+			if (nibbleCount == 2) {
+				cache = br.read<uint8_t>();
+				nibbleCount = 0;
+			}
+			if (nibbleCount == 0) {
+				++nibbleCount;
+				return (cache >> 4) & 0xf;
+			} else if (nibbleCount == 1) {
+				++nibbleCount;
+				return cache & 0xf;
+			}
+		};
 
+		auto getByte = [&]() -> int {
+			auto high = getNibble();
+			auto low = getNibble();
+			return ((high << 4) & 0xf0) | (low & 0xf);
+		};
+
+		auto expandNibble = [](int nibble) -> uint8_t {
+			return static_cast<uint8_t>(((nibble << 4) & 0xf0) | (nibble & 0xf));
+		};
+
+		for (int j = 0; j < glyph.compressedSize; ++j) {
+			/*int toCopy = getNibble();
+			int toRead = getNibble();
+			if (toRead == 0) toRead = 16;
+			for (int k = 0; k < toRead; ++k) {
+				glyph.pixels[pixelPtr++] = expandNibble(getNibble());
+			}
+			for (int k = 0; k < toCopy; ++k) {
+				// ???
+			}*/
+			uint8_t ctrl = getByte();
+			for (int i = 0; i < 8; ++i) {
+				auto type = (ctrl >> i) & 0x1;
+				if (type == 0) { // Literal byte, encoding 2 pixels as 2 4-bit values
+					glyph.pixels[pixelPtr++] = expandNibble(getNibble());
+					glyph.pixels[pixelPtr++] = expandNibble(getNibble());
+				} else {
+					// ...
+				}
+			}
 		}
 
-		for (int y = 0; y < glyph.height; ++y) {
+		/*for (int y = 0; y < glyph.height; ++y) {
 			for (int x = 0; x < glyph.width; ++x) {
 				glyph.pixels[y * glyph.width + x] = ((x + y) % 2) * 255;
 			}
-		}
+		}*/
 	}
 
 	archive.writeImage("export/glyph_maru.png", glyphs_[98].pixels.data(), glyphs_[98].width, glyphs_[98].height, glyphs_[98].width, 1);
