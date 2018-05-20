@@ -20,6 +20,8 @@ struct Glyph {
 	uint16_t compressedSize;
 
 	std::vector<uint8_t> pixels;
+
+	bool initialized = false;
 };
 
 class Font {
@@ -27,10 +29,16 @@ public:
 	static Font &global();
 	void load(const std::string &filename, Archive &archive);
 
-	const Glyph &getGlyph(uint16_t code) const;
+	const Glyph &getGlyph(uint16_t code);
 private:
+	const Glyph &initGlyph(uint32_t index);
 	static std::unique_ptr<Font> global_;
+
+	std::vector<uint32_t> offsets_;
+	std::vector<unsigned char> data_;
 	std::vector<Glyph> glyphs_;
+	
+	std::mutex fontMutex_;
 };
 
 enum class TextEntryType {
@@ -61,7 +69,7 @@ struct TextRuby : public TextEntry {
 
 class Text {
 public:
-	void setFont(const Font &font);
+	void setFont(Font &font);
 	void setText(const std::string &text);
 	void setWrap(int width);
 	const std::string &text();
@@ -86,7 +94,7 @@ private:
 
 	std::vector<std::unique_ptr<TextEntry>> glyphs_;
 
-	const Font *font_;
+	Font *font_;
 	Transform transform_;
 	std::string text_;
 	Texture fontTex_;
@@ -96,6 +104,8 @@ private:
 	bool isDone_ = false; // When the user has advanced through the whole text
 
 	TextVoice *currentVoice_ = nullptr;
+
+	std::mutex textMutex_;
 
 	static constexpr int texWidth = 2048;
 	static constexpr int texHeight = 1024;

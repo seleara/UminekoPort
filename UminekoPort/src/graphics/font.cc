@@ -20,8 +20,9 @@ Font &Font::global() {
 }
 
 void Font::load(const std::string &filename, Archive &archive) {
-	auto data = archive.read(filename);
-	BinaryReader br((const char *)data.data(), data.size());
+	std::lock_guard<std::mutex> lock(fontMutex_);
+	data_ = std::move(archive.read(filename));
+	BinaryReader br((const char *)data_.data(), data_.size());
 	
 	auto magic = br.readString(4);
 	if ((magic != "FNT3") && (magic != "FNT4")) {
@@ -33,18 +34,46 @@ void Font::load(const std::string &filename, Archive &archive) {
 	auto unknown2 = br.read<uint32_t>();
 
 	const int glyphCount = 8180;
-	std::vector<uint32_t> offsets;
-	offsets.reserve(glyphCount);
+	offsets_.reserve(glyphCount);
 	for (int i = 0; i < glyphCount; ++i) {
-		offsets.push_back(br.read<uint32_t>());
+		offsets_.push_back(br.read<uint32_t>());
+	}
+	glyphs_.resize(glyphCount);
+
+	//archive.writeImage("export/glyph_maru.png", glyphs_[98].pixels.data(), glyphs_[98].width, glyphs_[98].height, glyphs_[98].width, 1);
+	//auto fwzero = getGlyph(0x82f1);
+	//archive.writeImage("export/glyph_fwzero.png", fwzero.pixels.data(), fwzero.width, fwzero.height, fwzero.width, 1);
+}
+
+const Glyph &Font::getGlyph(uint16_t code) {
+	auto first = ((code >> 8) & 0xff);
+	if (first >= 0x81 && first < 0xa0) {
+		auto second = code & 0xff;
+		auto index = 0x60 + (first - 0x81) * 0xbc;
+		if (second <= 0x80)
+			return initGlyph(index + (second - 0x40));
+		else if (second <= 0xfc)
+			return initGlyph(index + (second - 0x41));
+
+		return initGlyph(0);
 	}
 
-	for (int i = 0; i < glyphCount; ++i) {
+	if (first >= 0x20 && first <= 0x7f)
+		return initGlyph(first - 0x20);
+
+	return initGlyph(0);
+}
+
+const Glyph &Font::initGlyph(uint32_t index) {
+	std::lock_guard<std::mutex> lock(fontMutex_);
+	auto &glyph = glyphs_[index];
+
+	if (!glyph.initialized) {
+		glyph.initialized = true;
 		//std::cout << "Reading glyph #" << i << "\n===================\n";
 		//br.seekg(offsets[i]);
-		uint8_t *readPtr = data.data() + offsets[i];
+		uint8_t *readPtr = data_.data() + offsets_[index];
 
-		auto &glyph = glyphs_.emplace_back();
 		glyph.xOffset = *(readPtr++);//br.read<uint8_t>();
 		glyph.yOffset = *(readPtr++);
 		glyph.width = *(readPtr++);
@@ -57,29 +86,8 @@ void Font::load(const std::string &filename, Archive &archive) {
 
 		glyph.pixels.resize(glyph.width * glyph.height);
 
-		if (glyph.compressedSize == 0) continue;
-
-		/*uint8_t cache = br.read<uint8_t>();
-		int nibbleCount = 0;
-		auto getNibble = [&]() -> int {
-			if (nibbleCount == 2) {
-				cache = br.read<uint8_t>();
-				nibbleCount = 0;
-			}
-			if (nibbleCount == 0) {
-				++nibbleCount;
-				return (cache >> 4) & 0xf;
-			} else if (nibbleCount == 1) {
-				++nibbleCount;
-				return cache & 0xf;
-			}
-		};
-
-		auto getByte = [&]() -> int {
-			auto high = getNibble();
-			auto low = getNibble();
-			return ((high << 4) & 0xf0) | (low & 0xf);
-		};*/
+		if (glyph.compressedSize == 0)
+			return glyph;
 
 		auto expandNibble = [](int nibble) -> uint8_t {
 			return static_cast<uint8_t>(((nibble << 4) & 0xf0) | (nibble & 0xf));
@@ -91,58 +99,33 @@ void Font::load(const std::string &filename, Archive &archive) {
 		int bytesRead = 0, bytesWritten = 0;
 		uint8_t *litPtr = literals.data();
 		while (bytesRead < glyph.compressedSize) {
-			/*int toCopy = getNibble();
-			int toRead = getNibble();
-			if (toRead == 0) toRead = 16;
-			for (int k = 0; k < toRead; ++k) {
-				glyph.pixels[pixelPtr++] = expandNibble(getNibble());
-			}
-			for (int k = 0; k < toCopy; ++k) {
-				// ???
-			}*/
-			auto ctrl = *(readPtr++); //br.read<uint8_t>();
+			auto ctrl = *(readPtr++);
 			++bytesRead;
 			/*std::cout << "[";
 			for (int i = 0; i < 8; ++i) {
-				std::cout << (int)((ctrl >> (7 - i)) & 1) << (i < 7 ? " " : "");
+			std::cout << (int)((ctrl >> (7 - i)) & 1) << (i < 7 ? " " : "");
 			}
 			std::cout << "] ";*/
 			for (int i = 0; i < 8; ++i) {
 				auto type = (ctrl >> i) & 0x1;
 				if (type == 0) { // Literal byte, encoding 2 pixels as 2 4-bit values
-					if ((bytesRead + 1) > glyph.compressedSize) break; // The compressed data can end prematurely
-					auto val = *(readPtr++); // br.read<uint8_t>();
-					//literals.push_back(val);
-					*(litPtr++) = val;
 					++bytesRead;
+					if (bytesRead > glyph.compressedSize) break; // The compressed data can end prematurely
+					auto val = *(readPtr++);
+					*(litPtr++) = val;
 					++bytesWritten;
-					//std::cout << "(" << std::hex << std::setw(2) << std::setfill('0') << (int)val << std::dec << ") ";
-					//glyph.pixels[pixelPtr++] = expandNibble((val >> 4) & 0xf);
-					//glyph.pixels[pixelPtr++] = expandNibble(val & 0xf);
 				} else {
-					if ((bytesRead + 2) > glyph.compressedSize) break; // The compressed data can end prematurely
+					bytesRead += 2;
+					if (bytesRead > glyph.compressedSize) break; // The compressed data can end prematurely
 					const auto backRefLow = *(readPtr++);
-					auto backRef = ((*(readPtr++) << 8) & 0xff00) | (backRefLow & 0xff); //br.read<uint16_t>();
-					//std::cout << "<" << std::hex << std::setw(4) << std::setfill('0') << backRef << std::dec << "> ";
-					// The offset is a bit weird. It is 12 bits in total, with the lower 8 bits being bits 8-15 of the uint16 value.
-					// The remaining upper 4 bits are bits 4-7.
-					//int offset = ((backRef >> 8) & 0xff) | (((backRef >> 4) & 0xf) << 8);
-					//int count = (backRef & 0xf) + 3;
-					//int offset = (backRef >> 8) & 0xff;
-					//int offset = ((backRef >> 8) & 0xff) + 1;
-					//int count = (backRef & 0xff) + 3;
+					auto backRef = ((*(readPtr++) << 8) & 0xff00) | (backRefLow & 0xff);
 					int offset = (((backRef >> 8) & 0xff) | (((backRef >> 6) & 0x3) << 8)) + 1;
 					int count = (backRef & 0x3f) + 3;
 					int absOffset = bytesWritten - offset;
-					bytesRead += 2;
 					for (int i = 0; i < count; ++i) {
-						//if (absOffset + i >= literals.size()) break;
-						auto copyVal = literals[absOffset + i];//glyph.pixels[absOffset + i - 1];
-						//glyph.pixels[pixelPtr] = copyVal;
-						//literals.push_back(copyVal);
+						auto copyVal = literals[absOffset + i];
 						*(litPtr++) = copyVal;
 						++bytesWritten;
-						//++pixelPtr;
 					}
 				}
 			}
@@ -172,31 +155,18 @@ void Font::load(const std::string &filename, Archive &archive) {
 			if (glyph.width % 2 != 0 && pixelPtr % glyph.width == 0)
 				getNibble();
 		}
-
-		/*for (int y = 0; y < glyph.height; ++y) {
-			for (int x = 0; x < glyph.width; ++x) {
-				glyph.pixels[y * glyph.width + x] = ((x + y) % 2) * 255;
-			}
-		}*/
 	}
 
-	archive.writeImage("export/glyph_maru.png", glyphs_[98].pixels.data(), glyphs_[98].width, glyphs_[98].height, glyphs_[98].width, 1);
+	return glyph;
 }
 
-const Glyph &Font::getGlyph(uint16_t code) const {
-	auto first = ((code >> 8) & 0xff);
-	if (first >= 0x81 && first < 0xa0) {
-		return glyphs_[0x60 + (code - 0x8140)];
-	}
-
-	return glyphs_[0];
-}
-
-void Text::setFont(const Font &font) {
+void Text::setFont(Font &font) {
+	std::lock_guard<std::mutex> lock(textMutex_);
 	font_ = &font;
 }
 
 void Text::setText(const std::string &text) {
+	std::lock_guard<std::mutex> lock(textMutex_);
 	text_ = text;
 	currentSegment_ = 0;
 	isDone_ = false;
@@ -235,6 +205,7 @@ void Text::advance() {
 		isDone_ = true;
 	} else {
 		int pushKeyCount = 0;
+		std::lock_guard<std::mutex> lock(textMutex_);
 		for (auto &glyph : glyphs_) {
 			if (glyph->type == TextEntryType::Voice) {
 				currentVoice_ = (TextVoice *)glyph.get();
@@ -295,24 +266,13 @@ void Text::render() {
 	};
 
 	std::vector<GlyphVertices> verts;
-
+	
 	float xAdvance = 0.0f, yAdvance = 0.0f;
 	//for (int i = 0; i < text_.size(); ++i) {
 	int pushKeyCount = 0;
-	for (auto &glyph : glyphs_) {
-		if (glyph->type == TextEntryType::LineBreak) {
-			yAdvance += 80.0f;
-			xAdvance = 0;
-			continue;
-		}
-		if (glyph->type == TextEntryType::PushKey) {
-			if (pushKeyCount >= currentSegment_) {
-				break;
-			}
-			++pushKeyCount;
-			continue;
-		}
-		if (glyph->type != TextEntryType::Glyph) continue;
+
+	auto addGlyph = [&](const std::unique_ptr<TextEntry> &glyph) {
+		if (glyph->type != TextEntryType::Glyph) return false;
 
 		if (wrapWidth_ > 0 && xAdvance >= wrapWidth_) {
 			yAdvance += 80.0f;
@@ -351,9 +311,105 @@ void Text::render() {
 		gv.vert[5].color = glm::vec4(1);
 
 		verts.push_back(std::move(gv));
-		
+
 		xAdvance += fg.xAdvance;
 		//yAdvance += fg.yAdvance;
+
+		return false;
+	};
+
+	auto addFurigana = [&](const std::unique_ptr<TextEntry> &glyph, int xStart) {
+		if (glyph->type != TextEntryType::Glyph) return false;
+
+		const auto &tg = *(TextGlyph *)glyph.get();
+		const auto &fg = *tg.fontGlyph;
+		GlyphVertices gv;
+
+		auto baseX = transform_.position.x + xStart + fg.xOffset;
+		auto baseY = transform_.position.y + yAdvance + fg.yOffset - 80.0f;
+
+		gv.vert[0].pos.x = baseX;
+		gv.vert[0].pos.y = baseY;
+		gv.vert[0].uv.x = tg.uvs.x;
+		gv.vert[0].uv.y = tg.uvs.y;
+		gv.vert[0].color = glm::vec4(1);
+
+		gv.vert[1].pos.x = baseX;
+		gv.vert[1].pos.y = baseY + fg.height * 0.4f;
+		gv.vert[1].uv.x = tg.uvs.x;
+		gv.vert[1].uv.y = tg.uvs.w;
+		gv.vert[1].color = glm::vec4(1);
+
+		gv.vert[2].pos.x = baseX + fg.width * 0.4f;
+		gv.vert[2].pos.y = baseY;
+		gv.vert[2].uv.x = tg.uvs.z;
+		gv.vert[2].uv.y = tg.uvs.y;
+		gv.vert[2].color = glm::vec4(1);
+
+		gv.vert[3] = gv.vert[2];
+
+		gv.vert[4] = gv.vert[1];
+
+		gv.vert[5].pos.x = baseX + fg.width * 0.4f;
+		gv.vert[5].pos.y = baseY + fg.height * 0.4f;
+		gv.vert[5].uv.x = tg.uvs.z;
+		gv.vert[5].uv.y = tg.uvs.w;
+		gv.vert[5].color = glm::vec4(1);
+
+		verts.push_back(std::move(gv));
+
+		return false;
+	};
+
+	auto checkGlyph = [&](const std::unique_ptr<TextEntry> &glyph) {
+		if (glyph->type == TextEntryType::LineBreak) {
+			yAdvance += 80.0f;
+			xAdvance = 0;
+			return false;
+		}
+		if (glyph->type == TextEntryType::PushKey) {
+			if (pushKeyCount >= currentSegment_) {
+				return true;
+			}
+			++pushKeyCount;
+			return false;
+		}
+		if (glyph->type == TextEntryType::Ruby) {
+			const auto &tr = *(TextRuby *)glyph.get();
+			auto startX = xAdvance;
+			for (const auto &g : tr.glyphs) {
+				addGlyph(g);
+			}
+			auto endX = xAdvance;
+			if (tr.furigana.size() == 0) return false; // Weird
+
+			int glyphWidth = endX - startX;
+			int glyphMiddle = startX + glyphWidth / 2;
+
+			int furiganaWidth = 0;
+			for (const auto &g : tr.furigana) {
+				const auto &tg = *(TextGlyph *)g.get();
+				furiganaWidth += tg.fontGlyph->xOffset + tg.fontGlyph->xAdvance;
+			}
+			int furiganaStartX = glyphMiddle - (furiganaWidth * 0.4f) / 2;
+
+			for (const auto &g : tr.furigana) {
+				addFurigana(g, furiganaStartX);
+				const auto &tg = *(TextGlyph *)g.get();
+				furiganaStartX += tg.fontGlyph->xAdvance * 0.4f;
+			}
+
+			return false;
+		}
+
+		return addGlyph(glyph);
+	};
+
+	{
+		std::lock_guard<std::mutex> lock(textMutex_);
+		for (auto &glyph : glyphs_) {
+			if (checkGlyph(glyph)) break;
+		}
 	}
 
 	VertexBuffer<float> vb;
@@ -375,7 +431,7 @@ void Text::render() {
 void Text::setupGlyphs() {
 	std::map<uint16_t, glm::vec4> uvMap;
 
-	int xAdvance = 0, yAdvance = 0;
+	int xAdvance = 4, yAdvance = 4;
 	int maxLineHeight = 0;
 
 	bool inRuby = false;
@@ -388,7 +444,7 @@ void Text::setupGlyphs() {
 	segments_ = 1;
 
 	glyphs_.clear();
-
+	// 南條　輝正rv19/11900001.「…………また。kv19/11900002.…お酒をbたしな.<嗜>.まれましたな？」
 	for (int i = 0; i < text_.size(); ++i) {
 		std::unique_ptr<TextEntry> entry;
 
@@ -436,9 +492,11 @@ void Text::setupGlyphs() {
 		} else if (inRubyKanji && c == '>') {
 			inRubyAfterKanji = true;
 			inRubyKanji = false;
+			continue;
 		} else if (inRubyAfterKanji && c == '.') {
 			curRuby = nullptr;
 			inRubyAfterKanji = false;
+			continue;
 		} else if (inRubyBeforeKanji || inRubyAfterKanji) {
 			continue;
 		}
@@ -462,27 +520,26 @@ void Text::setupGlyphs() {
 		auto iter = uvMap.find(code);
 		if (iter != uvMap.end()) {
 			tg.uvs = iter->second;
-			continue;
+		} else {
+			if (tg.fontGlyph->height > maxLineHeight) {
+				maxLineHeight = tg.fontGlyph->height;
+			}
+
+			if (xAdvance + tg.fontGlyph->width + 4 >= texWidth) {
+				xAdvance = 0;
+				yAdvance += maxLineHeight + 4;
+				maxLineHeight = 0;
+			}
+
+			tg.uvs.x = xAdvance;
+			tg.uvs.y = yAdvance;
+			tg.uvs.z = xAdvance + tg.fontGlyph->width;
+			tg.uvs.w = yAdvance + tg.fontGlyph->height;
+
+			xAdvance += tg.fontGlyph->width + 4;
+
+			uvMap.insert({ code, tg.uvs });
 		}
-
-		if (tg.fontGlyph->height > maxLineHeight) {
-			maxLineHeight = tg.fontGlyph->height;
-		}
-
-		if (xAdvance + tg.fontGlyph->width >= texWidth) {
-			xAdvance = 0;
-			yAdvance += maxLineHeight;
-			maxLineHeight = 0;
-		}
-
-		tg.uvs.x = xAdvance;
-		tg.uvs.y = yAdvance;
-		tg.uvs.z = xAdvance + tg.fontGlyph->width;
-		tg.uvs.w = yAdvance + tg.fontGlyph->height;
-
-		xAdvance += tg.fontGlyph->width;
-
-		uvMap.insert({ code, tg.uvs });
 
 		if (curRuby && inRubyKanji) {
 			curRuby->glyphs.push_back(std::move(entry));

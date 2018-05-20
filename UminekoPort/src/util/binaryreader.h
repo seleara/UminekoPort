@@ -24,6 +24,8 @@ public:
 	explicit BinaryReader(std::istream &is);
 	BinaryReader(const char *data, size_t size);
 	~BinaryReader();
+	BinaryReader(BinaryReader &&other);
+	BinaryReader &operator=(BinaryReader &&other);
 
 	void wrap(const char *data, size_t size);
 

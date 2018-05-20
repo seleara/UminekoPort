@@ -41,6 +41,20 @@ BinaryReader::BinaryReader(const char *data, size_t size) : ownsStream_(true) {
 	//std::cout << is_->good() << std::endl;
 }
 
+BinaryReader::BinaryReader(BinaryReader &&other) : ownsStream_(std::move(other.ownsStream_)), memoryBuffer_(std::move(other.memoryBuffer_)), is_(std::move(other.is_)) {
+	other.ownsStream_ = false;
+	other.is_ = nullptr;
+}
+
+BinaryReader &BinaryReader::operator=(BinaryReader &&other) {
+	ownsStream_ = std::move(other.ownsStream_);
+	other.ownsStream_ = false;
+	memoryBuffer_ = std::move(other.memoryBuffer_);
+	is_ = std::move(other.is_);
+	other.is_ = nullptr;
+	return *this;
+}
+
 BinaryReader::~BinaryReader() {
 	if (ownsStream_) {
 		delete is_;
