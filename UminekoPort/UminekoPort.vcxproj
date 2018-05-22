@@ -138,6 +138,7 @@
     <ClCompile Include="src\audio\audiomanager.cc" />
     <ClCompile Include="src\audio\audiostream.cc" />
     <ClCompile Include="src\data\archive.cc" />
+    <ClCompile Include="src\data\compression.cc" />
     <ClCompile Include="src\engine\engine.cc" />
     <ClCompile Include="src\engine\graphicscontext.cc" />
     <ClCompile Include="src\graphics\font.cc" />
@@ -166,6 +167,7 @@
     <ClInclude Include="src\audio\audiomanager.h" />
     <ClInclude Include="src\audio\audiostream.h" />
     <ClInclude Include="src\data\archive.h" />
+    <ClInclude Include="src\data\compression.h" />
     <ClInclude Include="src\data\vertexbuffer.h" />
     <ClInclude Include="src\engine\engine.h" />
     <ClInclude Include="src\engine\graphicscontext.h" />

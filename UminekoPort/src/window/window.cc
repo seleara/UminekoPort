@@ -47,7 +47,7 @@ void Window::create(int width, int height, const std::string &title) {
 
 	ImGui_ImplGlfwGL3_Init(window_, false);
 
-	glEnable(GL_ALPHA_TEST);
+	//glEnable(GL_ALPHA_TEST);
 	glEnable(GL_DEBUG_OUTPUT);
 	//glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);

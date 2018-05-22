@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include "compression.h"
 #include "../util/binaryreader.h"
 #include "../util/string.h"
 
@@ -504,31 +505,10 @@ Msk Archive::getMsk(const std::string &path) {
 	msk.name = entry.name;
 	msk.width = header.width;
 	msk.height = header.height;
-	msk.pixels.resize(msk.width * msk.height);
-
-	int pixelOff = 0;
-	while (br.tellg() < entry.offset + entry.size) {
-		auto ctrl = br.read<uint8_t>();
-
-		// The bits in ctrl specifies the size of the next 8 values, 1 = count (4 bits) + offset (12 bits), 0 = raw pixel (uint8)
-		for (int i = 0; i < 8; ++i) {
-			if (br.tellg() >= entry.offset + entry.size) break;
-			auto bit = (ctrl >> i) & 1;
-			if (bit) {
-				auto bytes = br.read<uint16_t>();
-				// The offset is a bit weird. It is 12 bits in total, with the lower 8 bits being bits 8-15 of the uint16 value.
-				// The remaining upper 4 bits are bits 4-7.
-				int offset = ((bytes >> 8) & 0xff) | (((bytes >> 4) & 0xf) << 8);
-				int count = (bytes & 0xf) + 3;
-				for (int i = 0; i < count; ++i) {
-					msk.pixels[pixelOff] = msk.pixels[pixelOff - offset - 1];
-					++pixelOff;
-				}
-			} else {
-				msk.pixels[pixelOff++] = br.read<uint8_t>();
-			}
-		}
-	}
+	std::vector<uint8_t> data;
+	data.resize(entry.size);
+	br.read((char *)data.data(), data.size());
+	msk.pixels = DataCompression::decompress12_4(data.data(), data.size(), msk.width * msk.height);
 
 	return msk;
 }

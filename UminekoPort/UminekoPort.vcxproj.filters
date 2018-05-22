@@ -96,6 +96,9 @@
     <ClCompile Include="src\graphics\messagewindow.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\data\compression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\engine.h">
@@ -189,6 +192,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\graphics\messagewindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\data\compression.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

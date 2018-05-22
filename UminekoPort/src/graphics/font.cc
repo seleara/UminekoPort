@@ -6,6 +6,7 @@
 #include <GL/glew.h>
 
 #include "../data/archive.h"
+#include "../data/compression.h"
 #include "../util/binaryreader.h"
 #include "../data/vertexbuffer.h"
 #include "../graphics/shader.h"
@@ -81,8 +82,8 @@ const Glyph &Font::initGlyph(uint32_t index) {
 		glyph.xAdvance = *(readPtr++);
 		glyph.yAdvance = *(readPtr++);
 
-		const auto compressedLow = *(readPtr++);
-		glyph.compressedSize = ((*(readPtr++) << 8) & 0xff00) | (compressedLow & 0xff);
+		glyph.compressedSize = *(uint16_t *)readPtr;
+		readPtr += 2;
 
 		glyph.pixels.resize(glyph.width * glyph.height);
 
@@ -93,44 +94,8 @@ const Glyph &Font::initGlyph(uint32_t index) {
 			return static_cast<uint8_t>(((nibble << 4) & 0xf0) | (nibble & 0xf));
 		};
 
-		std::vector<uint8_t> literals;
 		auto modWidth = (glyph.width % 2 == 0) ? glyph.width : (glyph.width + 1);
-		literals.resize(modWidth * glyph.height / 2);
-		int bytesRead = 0, bytesWritten = 0;
-		uint8_t *litPtr = literals.data();
-		while (bytesRead < glyph.compressedSize) {
-			auto ctrl = *(readPtr++);
-			++bytesRead;
-			/*std::cout << "[";
-			for (int i = 0; i < 8; ++i) {
-			std::cout << (int)((ctrl >> (7 - i)) & 1) << (i < 7 ? " " : "");
-			}
-			std::cout << "] ";*/
-			for (int i = 0; i < 8; ++i) {
-				auto type = (ctrl >> i) & 0x1;
-				if (type == 0) { // Literal byte, encoding 2 pixels as 2 4-bit values
-					++bytesRead;
-					if (bytesRead > glyph.compressedSize) break; // The compressed data can end prematurely
-					auto val = *(readPtr++);
-					*(litPtr++) = val;
-					++bytesWritten;
-				} else {
-					bytesRead += 2;
-					if (bytesRead > glyph.compressedSize) break; // The compressed data can end prematurely
-					const auto backRefLow = *(readPtr++);
-					auto backRef = ((*(readPtr++) << 8) & 0xff00) | (backRefLow & 0xff);
-					int offset = (((backRef >> 8) & 0xff) | (((backRef >> 6) & 0x3) << 8)) + 1;
-					int count = (backRef & 0x3f) + 3;
-					int absOffset = bytesWritten - offset;
-					for (int i = 0; i < count; ++i) {
-						auto copyVal = literals[absOffset + i];
-						*(litPtr++) = copyVal;
-						++bytesWritten;
-					}
-				}
-			}
-			//std::cout << "\n";
-		}
+		auto literals = DataCompression::decompress10_6(readPtr, glyph.compressedSize, modWidth * glyph.height / 2);
 
 		int nibbleCount = 0;
 		int literalIndex = 0;
@@ -260,7 +225,8 @@ void Text::render() {
 
 	struct GlyphVertices {
 		struct GlyphVertex {
-			glm::vec2 pos, uv;
+			glm::vec2 pos;
+			glm::vec2 uv;
 			glm::vec4 color;
 		} vert[6];
 	};
@@ -270,6 +236,39 @@ void Text::render() {
 	float xAdvance = 0.0f, yAdvance = 0.0f;
 	//for (int i = 0; i < text_.size(); ++i) {
 	int pushKeyCount = 0;
+
+	auto setupVertices = [&](float baseX, float baseY, const glm::vec4 &uvs, const Glyph &fg, float sizeMod, const glm::vec4 &color) {
+		GlyphVertices gv;
+		gv.vert[0].pos.x = baseX;
+		gv.vert[0].pos.y = baseY;
+		gv.vert[0].uv.x = uvs.x;
+		gv.vert[0].uv.y = uvs.y;
+		gv.vert[0].color = color;
+
+		gv.vert[1].pos.x = baseX;
+		gv.vert[1].pos.y = baseY + fg.height * sizeMod;
+		gv.vert[1].uv.x = uvs.x;
+		gv.vert[1].uv.y = uvs.w;
+		gv.vert[1].color = color;
+
+		gv.vert[2].pos.x = baseX + fg.width * sizeMod;
+		gv.vert[2].pos.y = baseY;
+		gv.vert[2].uv.x = uvs.z;
+		gv.vert[2].uv.y = uvs.y;
+		gv.vert[2].color = color;
+
+		gv.vert[3] = gv.vert[2];
+
+		gv.vert[4] = gv.vert[1];
+
+		gv.vert[5].pos.x = baseX + fg.width * sizeMod;
+		gv.vert[5].pos.y = baseY + fg.height * sizeMod;
+		gv.vert[5].uv.x = uvs.z;
+		gv.vert[5].uv.y = uvs.w;
+		gv.vert[5].color = color;
+
+		return gv;
+	};
 
 	auto addGlyph = [&](const std::unique_ptr<TextEntry> &glyph) {
 		if (glyph->type != TextEntryType::Glyph) return false;
@@ -281,35 +280,18 @@ void Text::render() {
 
 		const auto &tg = *(TextGlyph *)glyph.get();
 		const auto &fg = *tg.fontGlyph;
-		GlyphVertices gv;
-		gv.vert[0].pos.x = transform_.position.x + xAdvance + fg.xOffset;
-		gv.vert[0].pos.y = transform_.position.y + yAdvance + fg.yOffset;
-		gv.vert[0].uv.x = tg.uvs.x;
-		gv.vert[0].uv.y = tg.uvs.y;
-		gv.vert[0].color = glm::vec4(1);
 
-		gv.vert[1].pos.x = transform_.position.x + xAdvance + fg.xOffset;
-		gv.vert[1].pos.y = transform_.position.y + yAdvance + fg.yOffset + fg.height;
-		gv.vert[1].uv.x = tg.uvs.x;
-		gv.vert[1].uv.y = tg.uvs.w;
-		gv.vert[1].color = glm::vec4(1);
+		float baseX = transform_.position.x + xAdvance + fg.xOffset;
+		float baseY = transform_.position.y + yAdvance + fg.yOffset;
 
-		gv.vert[2].pos.x = transform_.position.x + xAdvance + fg.xOffset + fg.width;
-		gv.vert[2].pos.y = transform_.position.y + yAdvance + fg.yOffset;
-		gv.vert[2].uv.x = tg.uvs.z;
-		gv.vert[2].uv.y = tg.uvs.y;
-		gv.vert[2].color = glm::vec4(1);
+		for (int y = -1; y < 2; ++y) {
+			for (int x = -1; x < 2; ++x) {
+				GlyphVertices gv = setupVertices(baseX + x * 2.0f, baseY + y * 2.0f, tg.uvs, fg, 1.0f, glm::vec4(0, 0, 0, 1));
+				verts.push_back(std::move(gv));
+			}
+		}
 
-		gv.vert[3] = gv.vert[2];
-
-		gv.vert[4] = gv.vert[1];
-
-		gv.vert[5].pos.x = transform_.position.x + xAdvance + fg.xOffset + fg.width;
-		gv.vert[5].pos.y = transform_.position.y + yAdvance + fg.yOffset + fg.height;
-		gv.vert[5].uv.x = tg.uvs.z;
-		gv.vert[5].uv.y = tg.uvs.w;
-		gv.vert[5].color = glm::vec4(1);
-
+		GlyphVertices gv = setupVertices(baseX, baseY, tg.uvs, fg, 1.0f, glm::vec4(1));
 		verts.push_back(std::move(gv));
 
 		xAdvance += fg.xAdvance;
@@ -323,39 +305,18 @@ void Text::render() {
 
 		const auto &tg = *(TextGlyph *)glyph.get();
 		const auto &fg = *tg.fontGlyph;
-		GlyphVertices gv;
 
 		auto baseX = transform_.position.x + xStart + fg.xOffset;
 		auto baseY = transform_.position.y + yAdvance + fg.yOffset - 80.0f;
 
-		gv.vert[0].pos.x = baseX;
-		gv.vert[0].pos.y = baseY;
-		gv.vert[0].uv.x = tg.uvs.x;
-		gv.vert[0].uv.y = tg.uvs.y;
-		gv.vert[0].color = glm::vec4(1);
+		for (int y = -1; y < 2; ++y) {
+			for (int x = -1; x < 2; ++x) {
+				GlyphVertices gv = setupVertices(baseX + x * 0.8f, baseY + y * 0.8f, tg.uvs, fg, 0.4f, glm::vec4(0, 0, 0, 1));
+				verts.push_back(std::move(gv));
+			}
+		}
 
-		gv.vert[1].pos.x = baseX;
-		gv.vert[1].pos.y = baseY + fg.height * 0.4f;
-		gv.vert[1].uv.x = tg.uvs.x;
-		gv.vert[1].uv.y = tg.uvs.w;
-		gv.vert[1].color = glm::vec4(1);
-
-		gv.vert[2].pos.x = baseX + fg.width * 0.4f;
-		gv.vert[2].pos.y = baseY;
-		gv.vert[2].uv.x = tg.uvs.z;
-		gv.vert[2].uv.y = tg.uvs.y;
-		gv.vert[2].color = glm::vec4(1);
-
-		gv.vert[3] = gv.vert[2];
-
-		gv.vert[4] = gv.vert[1];
-
-		gv.vert[5].pos.x = baseX + fg.width * 0.4f;
-		gv.vert[5].pos.y = baseY + fg.height * 0.4f;
-		gv.vert[5].uv.x = tg.uvs.z;
-		gv.vert[5].uv.y = tg.uvs.w;
-		gv.vert[5].color = glm::vec4(1);
-
+		GlyphVertices gv = setupVertices(baseX, baseY, tg.uvs, fg, 0.4f, glm::vec4(1));
 		verts.push_back(std::move(gv));
 
 		return false;
@@ -376,22 +337,22 @@ void Text::render() {
 		}
 		if (glyph->type == TextEntryType::Ruby) {
 			const auto &tr = *(TextRuby *)glyph.get();
-			auto startX = xAdvance;
+			float startX = xAdvance;
 			for (const auto &g : tr.glyphs) {
 				addGlyph(g);
 			}
-			auto endX = xAdvance;
+			float endX = xAdvance;
 			if (tr.furigana.size() == 0) return false; // Weird
 
-			int glyphWidth = endX - startX;
-			int glyphMiddle = startX + glyphWidth / 2;
+			float glyphWidth = endX - startX;
+			float glyphMiddle = startX + glyphWidth / 2.0f;
 
-			int furiganaWidth = 0;
+			float furiganaWidth = 0;
 			for (const auto &g : tr.furigana) {
 				const auto &tg = *(TextGlyph *)g.get();
 				furiganaWidth += tg.fontGlyph->xOffset + tg.fontGlyph->xAdvance;
 			}
-			int furiganaStartX = glyphMiddle - (furiganaWidth * 0.4f) / 2;
+			float furiganaStartX = glyphMiddle - (furiganaWidth * 0.4f) / 2;
 
 			for (const auto &g : tr.furigana) {
 				addFurigana(g, furiganaStartX);
@@ -422,7 +383,11 @@ void Text::render() {
 	glActiveTexture(GL_TEXTURE0);
 	fontTex_.bind();
 
+	glDepthMask(GL_FALSE);
+
 	vb.draw(Primitives::Triangles, 0, verts.size() * 6);
+
+	glDepthMask(GL_TRUE);
 
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &vao);
