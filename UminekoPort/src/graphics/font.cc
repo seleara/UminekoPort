@@ -10,6 +10,8 @@
 #include "../util/binaryreader.h"
 #include "../data/vertexbuffer.h"
 #include "../graphics/shader.h"
+#include "../graphics/uniformbuffer.h"
+#include "../math/time.h"
 
 std::unique_ptr<Font> Font::global_;
 
@@ -137,6 +139,7 @@ void Text::setText(const std::string &text) {
 	isDone_ = false;
 	isDirty_ = true;
 	currentVoice_ = nullptr;
+	progress_ = 0.0f;
 
 	setupGlyphs();
 
@@ -166,6 +169,7 @@ const std::string &Text::text() {
 
 void Text::advance() {
 	++currentSegment_;
+	progress_ = 0.0f;
 	if (currentSegment_ >= segments_) {
 		isDone_ = true;
 	} else {
@@ -207,6 +211,12 @@ Transform &Text::transform() {
 	return transform_;
 }
 
+void Text::update() {
+	progress_ += Time::deltaTime();
+	if (progress_ >= 1.0f)
+		progress_ = 1.0f;
+}
+
 void Text::render() {
 	if (text_.size() == 0) return;
 	if (isDirty_) {
@@ -219,6 +229,10 @@ void Text::render() {
 	shader.loadCache("text");
 	shader.bind();
 
+	auto &textData = UniformBuffer::uniformBuffer<ShaderTextData>("text");
+	textData->progress.x = progress_;
+	textData.update();
+
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -228,6 +242,7 @@ void Text::render() {
 			glm::vec2 pos;
 			glm::vec2 uv;
 			glm::vec4 color;
+			float fadein;
 		} vert[6];
 	};
 
@@ -235,27 +250,29 @@ void Text::render() {
 	
 	float xAdvance = 0.0f, yAdvance = 0.0f;
 	//for (int i = 0; i < text_.size(); ++i) {
-	int pushKeyCount = 0;
 
-	auto setupVertices = [&](float baseX, float baseY, const glm::vec4 &uvs, const Glyph &fg, float sizeMod, const glm::vec4 &color) {
+	auto setupVertices = [&](float baseX, float baseY, const glm::vec4 &uvs, const Glyph &fg, float sizeMod, const glm::vec4 &color, float fadeinLeft, float fadeinRight) {
 		GlyphVertices gv;
 		gv.vert[0].pos.x = baseX;
 		gv.vert[0].pos.y = baseY;
 		gv.vert[0].uv.x = uvs.x;
 		gv.vert[0].uv.y = uvs.y;
 		gv.vert[0].color = color;
+		gv.vert[0].fadein = fadeinLeft;
 
 		gv.vert[1].pos.x = baseX;
 		gv.vert[1].pos.y = baseY + fg.height * sizeMod;
 		gv.vert[1].uv.x = uvs.x;
 		gv.vert[1].uv.y = uvs.w;
 		gv.vert[1].color = color;
+		gv.vert[1].fadein = fadeinLeft;
 
 		gv.vert[2].pos.x = baseX + fg.width * sizeMod;
 		gv.vert[2].pos.y = baseY;
 		gv.vert[2].uv.x = uvs.z;
 		gv.vert[2].uv.y = uvs.y;
 		gv.vert[2].color = color;
+		gv.vert[2].fadein = fadeinRight;
 
 		gv.vert[3] = gv.vert[2];
 
@@ -266,11 +283,12 @@ void Text::render() {
 		gv.vert[5].uv.x = uvs.z;
 		gv.vert[5].uv.y = uvs.w;
 		gv.vert[5].color = color;
+		gv.vert[5].fadein = fadeinRight;
 
 		return gv;
 	};
 
-	auto addGlyph = [&](const std::unique_ptr<TextEntry> &glyph) {
+	auto addGlyph = [&](const std::unique_ptr<TextEntry> &glyph, float fadeinLeft, float fadeinRight) {
 		if (glyph->type != TextEntryType::Glyph) return false;
 
 		if (wrapWidth_ > 0 && xAdvance >= wrapWidth_) {
@@ -286,12 +304,12 @@ void Text::render() {
 
 		for (int y = -1; y < 2; ++y) {
 			for (int x = -1; x < 2; ++x) {
-				GlyphVertices gv = setupVertices(baseX + x * 2.0f, baseY + y * 2.0f, tg.uvs, fg, 1.0f, glm::vec4(0, 0, 0, 1));
+				GlyphVertices gv = setupVertices(baseX + x * 2.0f, baseY + y * 2.0f, tg.uvs, fg, 1.0f, glm::vec4(0, 0, 0, 1), fadeinLeft, fadeinRight);
 				verts.push_back(std::move(gv));
 			}
 		}
 
-		GlyphVertices gv = setupVertices(baseX, baseY, tg.uvs, fg, 1.0f, glm::vec4(1));
+		GlyphVertices gv = setupVertices(baseX, baseY, tg.uvs, fg, 1.0f, glm::vec4(1), fadeinLeft, fadeinRight);
 		verts.push_back(std::move(gv));
 
 		xAdvance += fg.xAdvance;
@@ -300,7 +318,7 @@ void Text::render() {
 		return false;
 	};
 
-	auto addFurigana = [&](const std::unique_ptr<TextEntry> &glyph, int xStart) {
+	auto addFurigana = [&](const std::unique_ptr<TextEntry> &glyph, int xStart, float fadeinLeft, float fadeinRight) {
 		if (glyph->type != TextEntryType::Glyph) return false;
 
 		const auto &tg = *(TextGlyph *)glyph.get();
@@ -311,17 +329,42 @@ void Text::render() {
 
 		for (int y = -1; y < 2; ++y) {
 			for (int x = -1; x < 2; ++x) {
-				GlyphVertices gv = setupVertices(baseX + x * 0.8f, baseY + y * 0.8f, tg.uvs, fg, 0.4f, glm::vec4(0, 0, 0, 1));
+				GlyphVertices gv = setupVertices(baseX + x * 0.8f, baseY + y * 0.8f, tg.uvs, fg, 0.4f, glm::vec4(0, 0, 0, 1), fadeinLeft, fadeinRight);
 				verts.push_back(std::move(gv));
 			}
 		}
 
-		GlyphVertices gv = setupVertices(baseX, baseY, tg.uvs, fg, 0.4f, glm::vec4(1));
+		GlyphVertices gv = setupVertices(baseX, baseY, tg.uvs, fg, 0.4f, glm::vec4(1), fadeinLeft, fadeinRight);
 		verts.push_back(std::move(gv));
 
 		return false;
 	};
 
+	int currentSegmentGlyphCount = 0;
+	int pushKeyCount = 0;
+	{
+		std::lock_guard<std::mutex> lock(textMutex_);
+		for (auto &glyph : glyphs_) {
+			if (glyph->type == TextEntryType::PushKey) {
+				if (pushKeyCount > currentSegment_) {
+					break;
+				}
+				++pushKeyCount;
+			}
+			if (pushKeyCount == currentSegment_) {
+				if (glyph->type == TextEntryType::Glyph)
+					++currentSegmentGlyphCount;
+				else if (glyph->type == TextEntryType::Ruby) {
+					for (auto &rg : ((TextRuby *)glyph.get())->glyphs) {
+						++currentSegmentGlyphCount;
+					}
+				}
+			}
+		}
+	}
+
+	int currentSegmentGlyphIndex = 0;
+	pushKeyCount = 0;
 	auto checkGlyph = [&](const std::unique_ptr<TextEntry> &glyph) {
 		if (glyph->type == TextEntryType::LineBreak) {
 			yAdvance += 80.0f;
@@ -339,7 +382,14 @@ void Text::render() {
 			const auto &tr = *(TextRuby *)glyph.get();
 			float startX = xAdvance;
 			for (const auto &g : tr.glyphs) {
-				addGlyph(g);
+				if (pushKeyCount < currentSegment_) {
+					addGlyph(g, 0.0f, 0.0f);
+				} else {
+					float fadeinLeft = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
+					float fadeinRight = (currentSegmentGlyphIndex + 1) / (float)currentSegmentGlyphCount;
+					addGlyph(g, fadeinLeft, fadeinRight);
+					++currentSegmentGlyphIndex;
+				}
 			}
 			float endX = xAdvance;
 			if (tr.furigana.size() == 0) return false; // Weird
@@ -355,7 +405,13 @@ void Text::render() {
 			float furiganaStartX = glyphMiddle - (furiganaWidth * 0.4f) / 2;
 
 			for (const auto &g : tr.furigana) {
-				addFurigana(g, furiganaStartX);
+				if (pushKeyCount < currentSegment_) {
+					addFurigana(g, furiganaStartX, 0.0f, 0.0f);
+				} else {
+					float fadeinLeft = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
+					float fadeinRight = (currentSegmentGlyphIndex + 1) / (float)currentSegmentGlyphCount;
+					addFurigana(g, furiganaStartX, fadeinLeft, fadeinRight);
+				}
 				const auto &tg = *(TextGlyph *)g.get();
 				furiganaStartX += tg.fontGlyph->xAdvance * 0.4f;
 			}
@@ -363,7 +419,14 @@ void Text::render() {
 			return false;
 		}
 
-		return addGlyph(glyph);
+		if (pushKeyCount < currentSegment_) {
+			return addGlyph(glyph, 0.0f, 0.0f);
+		}
+		float fadeinLeft = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
+		float fadeinRight = (currentSegmentGlyphIndex + 1) / (float)currentSegmentGlyphCount;
+		bool result = addGlyph(glyph, fadeinLeft, fadeinRight);
+		++currentSegmentGlyphIndex;
+		return result;
 	};
 
 	{
@@ -374,11 +437,12 @@ void Text::render() {
 	}
 
 	VertexBuffer<float> vb;
-	vb.upload(verts.data(), verts.size() * 8 * 6);
+	vb.upload(verts.data(), verts.size() * 9 * 6);
 	vb.bind();
-	vb.setAttribute(0, 2, 8, 0);
-	vb.setAttribute(1, 2, 8, 2);
-	vb.setAttribute(2, 4, 8, 4);
+	vb.setAttribute(0, 2, 9, 0);
+	vb.setAttribute(1, 2, 9, 2);
+	vb.setAttribute(2, 4, 9, 4);
+	vb.setAttribute(3, 1, 9, 8);
 
 	glActiveTexture(GL_TEXTURE0);
 	fontTex_.bind();
@@ -396,7 +460,8 @@ void Text::render() {
 void Text::setupGlyphs() {
 	std::map<uint16_t, glm::vec4> uvMap;
 
-	int xAdvance = 4, yAdvance = 4;
+	const int spacing = 8;
+	int xAdvance = spacing, yAdvance = spacing;
 	int maxLineHeight = 0;
 
 	bool inRuby = false;
@@ -490,9 +555,9 @@ void Text::setupGlyphs() {
 				maxLineHeight = tg.fontGlyph->height;
 			}
 
-			if (xAdvance + tg.fontGlyph->width + 4 >= texWidth) {
+			if (xAdvance + tg.fontGlyph->width + spacing >= texWidth) {
 				xAdvance = 0;
-				yAdvance += maxLineHeight + 4;
+				yAdvance += maxLineHeight + spacing;
 				maxLineHeight = 0;
 			}
 
@@ -501,7 +566,7 @@ void Text::setupGlyphs() {
 			tg.uvs.z = xAdvance + tg.fontGlyph->width;
 			tg.uvs.w = yAdvance + tg.fontGlyph->height;
 
-			xAdvance += tg.fontGlyph->width + 4;
+			xAdvance += tg.fontGlyph->width + spacing;
 
 			uvMap.insert({ code, tg.uvs });
 		}
@@ -517,6 +582,7 @@ void Text::setupGlyphs() {
 }
 
 void Text::renderFontTexture() {
+	std::lock_guard<std::mutex> lock(textMutex_);
 	if (fontTex_.id() == 0)
 		fontTex_.create(texWidth, texHeight);
 

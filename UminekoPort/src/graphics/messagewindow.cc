@@ -76,6 +76,11 @@ int MessageWindow::currentSegment() const {
 	return text_.currentSegment();
 }
 
+void MessageWindow::update() {
+	if (!visible()) return;
+	text_.update();
+}
+
 void MessageWindow::render() {
 	if (!visible()) return;
 	SpriteBatch batch;

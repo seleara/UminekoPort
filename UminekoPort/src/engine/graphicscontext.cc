@@ -47,6 +47,8 @@ void GraphicsContext::update() {
 	auto trans = UniformBuffer::uniformBuffer<ShaderTransition>("trans");
 	trans->progress.x = transitionProgress_;
 	trans.update();
+
+	msg_.update();
 }
 
 void GraphicsContext::render() {

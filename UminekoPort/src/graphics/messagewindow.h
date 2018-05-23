@@ -23,6 +23,7 @@ public:
 
 	int currentSegment() const;
 
+	void update();
 	void render();
 private:
 	friend class GraphicsContext;

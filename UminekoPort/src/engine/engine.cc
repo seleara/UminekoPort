@@ -47,6 +47,12 @@ void Engine::run() {
 	mvp2d->projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f);
 	mvp2d.update();
 
+	UniformBuffer::createUniformBuffer<ShaderTextData>("text", 3);
+	UniformBuffer::bindUniformBuffer("text");
+	auto text = UniformBuffer::uniformBuffer<ShaderTextData>("text");
+	text->progress.x = 0.0f;
+	text.update();
+
 	if (game == "umi" || game == "chiru") {
 		Font::global().load("default.fnt", arc);
 	} else if (game == "higu") {

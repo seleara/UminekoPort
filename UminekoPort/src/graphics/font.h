@@ -67,6 +67,10 @@ struct TextRuby : public TextEntry {
 	std::vector<std::unique_ptr<TextEntry>> glyphs;
 };
 
+struct ShaderTextData {
+	glm::vec4 progress;
+};
+
 class Text {
 public:
 	void setFont(Font &font);
@@ -87,6 +91,7 @@ public:
 	}
 
 	Transform &transform();
+	void update();
 	void render();
 private:
 	void setupGlyphs();
@@ -102,6 +107,7 @@ private:
 	int wrapWidth_ = 0;
 	int currentSegment_ = 0, segments_ = 0;
 	bool isDone_ = false; // When the user has advanced through the whole text
+	float progress_ = 0;
 
 	TextVoice *currentVoice_ = nullptr;
 
