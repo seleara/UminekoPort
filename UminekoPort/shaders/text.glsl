@@ -41,7 +41,7 @@ uniform sampler2DRect tex;
 
 void main() {
 	color = fs_in.color * texture(tex, fs_in.texcoord).rrrr;
-	color *= smoothstep(0.0, 1.0 - text.progress.x, 1.0 - fs_in.fadein);
+	color *= smoothstep(clamp(1.0 - text.progress.x - 0.1, 0.0, 1.0), 1.0 - text.progress.x, 1.0 - fs_in.fadein);
 }
 
 #endif

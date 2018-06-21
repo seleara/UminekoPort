@@ -175,7 +175,7 @@ void Script::executeCommand(BinaryReader &br, Archive &archive) {
 
 void Script::command87(BinaryReader &br, Archive &archive) {
 	auto segment = br.read<int16_t>();
-	ctx_.waitForMessageSegment(segment);
+	ctx_.message().waitForMessageSegment(segment);
 	pause();
 }
 

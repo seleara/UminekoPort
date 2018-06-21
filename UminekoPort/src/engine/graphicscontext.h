@@ -11,6 +11,7 @@
 #include "../math/time.h"
 #include "../graphics/font.h"
 #include "../graphics/messagewindow.h"
+#include "../graphics/transition.h"
 
 enum class GraphicsLayerType {
 	None,
@@ -53,10 +54,6 @@ struct GraphicsLayer {
 	GraphicsLayerProperties properties;
 };
 
-struct ShaderTransition {
-	glm::vec4 progress; // x
-};
-
 class GraphicsContext {
 public:
 	GraphicsContext(Window &window, Archive &archive, AudioManager &audio);
@@ -78,69 +75,27 @@ public:
 	}
 
 	void transition(uint32_t frames) {
-		useMask_ = false;
-		isTransitioning_ = true;
-		transitionSpeed_ = frames / 60.0;
-		transitionProgress_ = 0;
+		transition_.transition(frames);
 	}
 
 	void transition(const std::string &maskFilename, uint32_t frames) {
-		useMask_ = true;
-		maskDirty_ = true;
-		maskFilename_ = maskFilename;
-		isTransitioning_ = true;
-		transitionSpeed_ = frames / 60.0;
-		transitionProgress_ = 0;
+		transition_.transition(maskFilename, frames);
 	}
 
 	bool transitionDone() const {
-		return isTransitioning_ && transitionProgress_ >= 1.0;
+		return transition_.transitionDone();
 	}
 
 	void endTransitionMode() {
-		isTransitioning_ = false;
-		transitionProgress_ = 0;
-		transitionSpeed_ = 0;
+		transition_.endTransitionMode();
 	}
 
-	void pushMessage(const std::string &text) {
-		msg_.addText(text);
-		msg_.setVisible(true);
-	}
-
-	void hideMessage() {
-		msg_.setVisible(false);
-	}
-
-	void advance() {
-		msg_.advance();
-		if (isWaitingForMessageSegment_) {
-			if (waitForMessageSegment_ == -1 && msg_.done()) {
-				doneWaitingForMessageSegment_ = true;
-				isWaitingForMessageSegment_ = false;
-			} else if (waitForMessageSegment_ + 1 == msg_.currentSegment()) {
-				doneWaitingForMessageSegment_ = true;
-				isWaitingForMessageSegment_ = false;
-			}
-		}
-	}
-
-	void waitForMessageSegment(int segment) {
-		isWaitingForMessageSegment_ = true;
-		doneWaitingForMessageSegment_ = false;
-		waitForMessageSegment_ = segment;
-	}
-
-	bool doneWaitingForMessageSegment() const {
-		return doneWaitingForMessageSegment_;
-	}
-
-	bool messageDone() const {
-		return msg_.done();
+	MessageWindow &message() {
+		return msg_;
 	}
 
 	GraphicsLayerProperties layerProperties(int layer) {
-		return layers_[layer].newProperties;
+		return newLayers_[layer].newProperties;
 	}
 
 	void setLayerProperties(int layer, GraphicsLayerProperties properties) {
@@ -200,23 +155,10 @@ private:
 	Archive &archive_;
 	AudioManager &audio_;
 
-	bool isTransitioning_ = false, useMask_ = false;
-	double transitionSpeed_ = 0;
-	double transitionProgress_ = 0;
+	Transition transition_;
 
-	bool maskDirty_ = false;
-	std::string maskFilename_;
-
-	//GLuint prevTexture_, nextTexture_;
-	//Texture prevTexture_, nextTexture_;
-	//GLuint prevFramebuffer_, nextFramebuffer_;
-	//GLuint prevDepthRb_, nextDepthRb_;
 	Framebuffer prevFramebuffer_, nextFramebuffer_;
-	Texture transitionMask_;
 
 	bool waiting_ = false;
 	double waitTime_ = 0.0;
-
-	bool isWaitingForMessageSegment_ = false, doneWaitingForMessageSegment_ = false;
-	int waitForMessageSegment_ = -1;
 };

@@ -180,6 +180,7 @@
     <ClInclude Include="src\graphics\sprite.h" />
     <ClInclude Include="src\graphics\spritebatch.h" />
     <ClInclude Include="src\graphics\texture.h" />
+    <ClInclude Include="src\graphics\transition.h" />
     <ClInclude Include="src\graphics\uniformbuffer.h" />
     <ClInclude Include="src\imgui\glimgui.h" />
     <ClInclude Include="src\math\clock.h" />

@@ -314,14 +314,14 @@ private:
 		br.skip(1); // ???
 		auto shouldPause = br.read<uint8_t>();
 		auto text = readString16(br);
-		ctx_.pushMessage(text);
+		ctx_.message().push(text);
 		if (shouldPause)
 			pause();
 	}
 	void command87(BinaryReader &br, Archive &archive);
 	void command88(BinaryReader &br, Archive &archive);
 	void command89(BinaryReader &br, Archive &archive) {
-		ctx_.hideMessage();
+		ctx_.message().hide();
 	}
 	void command8C(BinaryReader &br, Archive &archive) {
 		br.skip(5);

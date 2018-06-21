@@ -385,8 +385,8 @@ void Text::render() {
 				if (pushKeyCount < currentSegment_) {
 					addGlyph(g, 0.0f, 0.0f);
 				} else {
-					float fadeinLeft = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
-					float fadeinRight = (currentSegmentGlyphIndex + 1) / (float)currentSegmentGlyphCount;
+					float fadeinLeft = (currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
+					float fadeinRight = (currentSegmentGlyphIndex) / (float)currentSegmentGlyphCount;
 					addGlyph(g, fadeinLeft, fadeinRight);
 					++currentSegmentGlyphIndex;
 				}
@@ -408,8 +408,8 @@ void Text::render() {
 				if (pushKeyCount < currentSegment_) {
 					addFurigana(g, furiganaStartX, 0.0f, 0.0f);
 				} else {
-					float fadeinLeft = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
-					float fadeinRight = (currentSegmentGlyphIndex + 1) / (float)currentSegmentGlyphCount;
+					float fadeinLeft = (currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
+					float fadeinRight = (currentSegmentGlyphIndex) / (float)currentSegmentGlyphCount;
 					addFurigana(g, furiganaStartX, fadeinLeft, fadeinRight);
 				}
 				const auto &tg = *(TextGlyph *)g.get();
@@ -422,8 +422,8 @@ void Text::render() {
 		if (pushKeyCount < currentSegment_) {
 			return addGlyph(glyph, 0.0f, 0.0f);
 		}
-		float fadeinLeft = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
-		float fadeinRight = (currentSegmentGlyphIndex + 1) / (float)currentSegmentGlyphCount;
+		float fadeinLeft = (currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
+		float fadeinRight = (currentSegmentGlyphIndex) / (float)currentSegmentGlyphCount;
 		bool result = addGlyph(glyph, fadeinLeft, fadeinRight);
 		++currentSegmentGlyphIndex;
 		return result;

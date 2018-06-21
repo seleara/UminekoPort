@@ -3,7 +3,7 @@
 #include "../graphics/shader.h"
 #include "../graphics/uniformbuffer.h"
 
-GraphicsContext::GraphicsContext(Window &window, Archive &archive, AudioManager &audio) : window_(window), archive_(archive), audio_(audio) {
+GraphicsContext::GraphicsContext(Window &window, Archive &archive, AudioManager &audio) : window_(window), archive_(archive), audio_(audio), transition_(archive) {
 	prevFramebuffer_.create(window_.fboSize().x, window_.fboSize().y);
 
 	nextFramebuffer_.create(window_.fboSize().x, window_.fboSize().y);
@@ -40,13 +40,8 @@ void GraphicsContext::update() {
 	if (waiting_) {
 		waitTime_ -= Time::deltaTime();
 	}
-	if (isTransitioning_) {
-		transitionProgress_ += Time::deltaTime() / transitionSpeed_;
-	}
 
-	auto trans = UniformBuffer::uniformBuffer<ShaderTransition>("trans");
-	trans->progress.x = transitionProgress_;
-	trans.update();
+	transition_.update();
 
 	msg_.update();
 }
@@ -126,36 +121,10 @@ void GraphicsContext::render() {
 	vb.setAttribute(1, 2, 8, 2);
 	vb.setAttribute(2, 4, 8, 4);
 
-	Shader shader;
-	if (isTransitioning_) {
-		shader.loadCache("gc_transition");
-		shader.bind();
-
-		glActiveTexture(GL_TEXTURE0);
-		prevFramebuffer_.texture().bind();
-
-		glActiveTexture(GL_TEXTURE0 + 1);
-		nextFramebuffer_.texture().bind();
-
-		auto trans = UniformBuffer::uniformBuffer<ShaderTransition>("trans");
-		if (useMask_) {
-			if (maskDirty_) {
-				transitionMask_.loadMsk(maskFilename_, archive_, true);
-				maskDirty_ = false;
-			}
-			trans->progress.y = 1.0f;
-
-			glActiveTexture(GL_TEXTURE0 + 2);
-			transitionMask_.bind();
-		} else {
-			trans->progress.y = 0.0f;
-		}
-		trans.update();
-
-		vb.draw(Primitives::TriangleStrip, 0, 4);
-		vb.release();
-
+	if (transition_.isTransitioning()) {
+		transition_.mix(prevFramebuffer_, nextFramebuffer_, vb);
 	} else {
+		Shader shader;
 		shader.loadCache("gc");
 		shader.bind();
 
@@ -163,8 +132,8 @@ void GraphicsContext::render() {
 		prevFramebuffer_.texture().bind();
 
 		vb.draw(Primitives::TriangleStrip, 0, 4);
-		vb.release();
 	}
+	vb.release();
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &vao);
 	glEnable(GL_DEPTH_TEST);

@@ -197,6 +197,9 @@
     <ClInclude Include="src\data\compression.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\graphics\transition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\2d.glsl" />

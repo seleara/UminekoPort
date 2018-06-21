@@ -58,10 +58,29 @@ void MessageWindow::advance() {
 			}
 		}
 	}
+
+	if (isWaitingForMessageSegment_) {
+		if (waitForMessageSegment_ == -1 && done()) {
+			doneWaitingForMessageSegment_ = true;
+			isWaitingForMessageSegment_ = false;
+		} else if (waitForMessageSegment_ + 1 == currentSegment()) {
+			doneWaitingForMessageSegment_ = true;
+			isWaitingForMessageSegment_ = false;
+		}
+	}
 }
 
 bool MessageWindow::done() const {
 	return done_;
+}
+
+void MessageWindow::push(const std::string &text) {
+	addText(text);
+	setVisible(true);
+}
+
+void MessageWindow::hide() {
+	setVisible(false);
 }
 
 void MessageWindow::setVisible(bool visible) {

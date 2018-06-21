@@ -89,8 +89,8 @@ void Engine::run() {
 				}
 			}
 			if (skipping) {
-				ctx.advance();
-				if (ctx.messageDone()) {
+				ctx.message().advance();
+				if (ctx.message().done()) {
 					script.resume();
 				}
 			}
@@ -99,10 +99,10 @@ void Engine::run() {
 					skipping = true;
 				}
 				if (event.key == KeyCode::Space || event.key == KeyCode::Return) {
-					ctx.advance();
-					if (ctx.messageDone()) {
+					ctx.message().advance();
+					if (ctx.message().done()) {
 						script.resume();
-					} else if (ctx.doneWaitingForMessageSegment()) {
+					} else if (ctx.message().doneWaitingForMessageSegment()) {
 						script.resume();
 					}
 				}
