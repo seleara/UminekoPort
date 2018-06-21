@@ -247,7 +247,7 @@ private:
 	}
 	void command48(BinaryReader &br, Archive &archive) {
 		auto offset = br.read<uint32_t>();
-		callStack_.push_back(br.tellg());
+		callStack_.push_back(static_cast<uint32_t>(br.tellg()));
 		jump(offset);
 	}
 	void command49(BinaryReader &br, Archive &archive) {

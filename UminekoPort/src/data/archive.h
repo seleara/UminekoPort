@@ -53,6 +53,12 @@ struct Msk {
 	std::vector<unsigned char> pixels;
 };
 
+struct Png {
+	std::string name;
+	uint32_t width, height;
+	std::vector<unsigned char> pixels;
+};
+
 class Archive {
 public:
 	void open(const std::string &path);
@@ -62,6 +68,7 @@ public:
 	Bup getBup(const std::string &path);
 	Pic getPic(const std::string &path);
 	Msk getMsk(const std::string &path);
+	Png getPng(const std::string &path);
 	void extractMsk(const std::string &path);
 	void writeImage(const std::string &path, unsigned char *data, int width, int height, int scanline, int bpp=4);
 private:

@@ -39,6 +39,8 @@ struct WindowEvent {
 	WindowEvent() {}
 };
 
+struct Png;
+
 class Window {
 public:
 	void create(int width, int height, const std::string &title);
@@ -48,6 +50,7 @@ public:
 	void blitFramebuffer();
 	void swapBuffers();
 	void setTitle(const std::string &title);
+	void setIcon(const Png &png);
 	const glm::ivec2 fboSize() const {
 		return fboSize_;
 	}

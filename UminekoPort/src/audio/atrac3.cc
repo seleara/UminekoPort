@@ -31,14 +31,14 @@ void AT3File::load(const std::string &filename, Archive &archive) {
 
 	avData_ = (unsigned char *)av_malloc(data_.size());
 	dataOffset_ = 0;
-	dataRemaining_ = data_.size();
+	dataRemaining_ = static_cast<uint32_t>(data_.size());
 
 	format_ = avformat_alloc_context();
 	if (!format_) {
 		throw std::runtime_error("Cannot allocate format context.");
 	}
 
-	avio_ = avio_alloc_context(avData_, data_.size(), 0, (void *)this, &AT3File::readBuffer, NULL, NULL);
+	avio_ = avio_alloc_context(avData_, static_cast<int>(data_.size()), 0, (void *)this, &AT3File::readBuffer, NULL, NULL);
 	if (!avio_) {
 		throw std::runtime_error("Cannot allocate AVIO context.");
 	}
@@ -56,9 +56,9 @@ void AT3File::load(const std::string &filename, Archive &archive) {
 	}
 
 	int streamIndex = -1;
-	for (int i = 0; i < format_->nb_streams; ++i) {
+	for (unsigned int i = 0; i < format_->nb_streams; ++i) {
 		if (format_->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-			streamIndex = i;
+			streamIndex = static_cast<int>(i);
 			break;
 		}
 	}
@@ -148,7 +148,7 @@ bool AT3File::nextSamples(std::vector<int16_t> &buffer, uint32_t &samplesNeeded)
 
 	samplesNeeded = 0;
 
-	int lastSize = 0;
+	size_t lastSize = 0;
 
 	int data_size = av_samples_get_buffer_size(NULL, context_->channels, decoded_frame->nb_samples, context_->sample_fmt, 1);
 

@@ -46,7 +46,7 @@ private:
 	static int readBuffer(void *opaque, uint8_t *buf, int bufSize) {
 		AT3File *at3 = (AT3File *)opaque;
 
-		bufSize = FFMIN(bufSize, at3->dataRemaining_);
+		bufSize = FFMIN(bufSize, static_cast<int>(at3->dataRemaining_));
 		if (!bufSize) {
 			return AVERROR_EOF;
 		}

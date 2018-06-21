@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "../imgui/glimgui.h"
+#include "../data/archive.h"
 
 void Window::create(int width, int height, const std::string &title) {
 	size_.x = width;
@@ -110,7 +111,7 @@ void Window::blitFramebuffer() {
 	auto wy = size_.y / 2.0 - fboSize_.y / 2.0;
 	auto wx2 = wx + fboSize_.x;
 	auto wy2 = wy + fboSize_.y;
-	glBlitFramebuffer(0, 0, static_cast<GLint>(fboSize_.x), static_cast<GLint>(fboSize_.y), wx, wy, wx2, wy2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, static_cast<GLint>(fboSize_.x), static_cast<GLint>(fboSize_.y), static_cast<GLint>(wx), static_cast<GLint>(wy), static_cast<GLint>(wx2), static_cast<GLint>(wy2), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 	Framebuffer::bindReadNull();
 	singlesampleFbo_.bindDraw();
@@ -140,6 +141,11 @@ void Window::swapBuffers() {
 
 void Window::setTitle(const std::string &title) {
 	glfwSetWindowTitle(window_, title.c_str());
+}
+
+void Window::setIcon(const Png &icon) {
+	GLFWimage img = { static_cast<int>(icon.width), static_cast<int>(icon.height), const_cast<unsigned char *>(icon.pixels.data()) };
+	glfwSetWindowIcon(window_, 1, &img);
 }
 
 void Window::pushEvent(WindowEvent &&event) {

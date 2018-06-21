@@ -30,6 +30,7 @@ void Engine::run() {
 
 	Window window;
 	window.create(1600, 900, "Umineko Port");
+	window.setIcon(arc.getPng("icon.png"));
 
 	AudioManager audio(arc);
 

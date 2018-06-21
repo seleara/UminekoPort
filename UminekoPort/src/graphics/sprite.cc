@@ -33,6 +33,8 @@ const glm::ivec2 Sprite::calcPivot() const {
 		return glm::ivec2(tx / 2 + pivotOffset.x, ty - pivotOffset.y);
 	case Pivot::BottomRight:
 		return glm::ivec2(tx - pivotOffset.x, ty - pivotOffset.y);
+	default:
+		return glm::ivec2(0, 0);
 	}
 }
 

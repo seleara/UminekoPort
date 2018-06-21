@@ -8,6 +8,7 @@
 #include "../util/binaryreader.h"
 #include "../util/string.h"
 
+#include "../stb/stb_image.h"
 #include "../stb/stb_image_write.h"
 
 void Archive::open(const std::string &path) {
@@ -39,7 +40,9 @@ void Archive::explore(ArchiveEntry &folder) {
 	std::cout << "\n: ";
 	std::string cmd;
 	std::getline(std::cin, cmd);
-	if (cmd.substr(0, 3) == "cd ") {
+	if (cmd.substr(0, 5) == "exit ") {
+		return;
+	} else if (cmd.substr(0, 3) == "cd ") {
 		auto dir = cmd.substr(3);
 		if (dir == ".." && folder.name != "") {
 			return;
@@ -292,7 +295,7 @@ struct TxaChunk {
 	uint16_t unknown;
 	uint32_t offset;
 
-	char name[0];
+	//char name[0];
 };
 
 void Archive::extractTxa(ArchiveEntry &txa) {
@@ -305,7 +308,7 @@ void Archive::extractTxa(ArchiveEntry &txa) {
 	std::vector<std::string> names;
 	//br.read(metadata, header.offset - sizeof(header));
 
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		uint64_t chunkStart = br.tellg();
 		auto chunk = br.read<TxaChunk>();
 		auto name = br.readString();
@@ -322,7 +325,7 @@ void Archive::extractTxa(ArchiveEntry &txa) {
 	decode(buffer, header.encodedSize, data);
 
 	std::stringstream bmpName;
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		bmpName << txa.name << "_" << names[i] << ".png";
 		std::cout << "PNG: " << bmpName.str() << "\n";
 		writeImage(bmpName.str(), data + chunks[i].offset, chunks[i].width, chunks[i].height, chunks[i].scanline);
@@ -408,7 +411,7 @@ Txa Archive::getTxa(const std::string &path) {
 	std::vector<std::string> names;
 	//br.read(metadata, header.offset - sizeof(header));
 
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		uint64_t chunkStart = br.tellg();
 		auto chunk = br.read<TxaChunk>();
 		auto name = br.readString();
@@ -427,7 +430,7 @@ Txa Archive::getTxa(const std::string &path) {
 	Txa txa;
 	txa.name = entry.name;
 	txa.subentries.reserve(header.chunks);
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		//std::stringstream bmpName;
 		//bmpName << txa.name << "_" << names[i] << ".png";
 		//std::cout << "PNG: " << bmpName.str() << "\n";
@@ -465,7 +468,7 @@ Pic Archive::getPic(const std::string &path) {
 	pic.width = header.width;
 	pic.height = header.height;
 
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		PicChunk &chunk = chunks[i];
 
 		auto size = chunk.size;
@@ -516,8 +519,8 @@ Msk Archive::getMsk(const std::string &path) {
 void Archive::extractMsk(const std::string &path) {
 	auto msk = getMsk(path);
 	std::vector<unsigned char> expandedPixels(msk.width * msk.height * 4);
-	for (int i = 0; i < msk.height; ++i) {
-		for (int j = 0; j < msk.width; ++j) {
+	for (uint32_t i = 0; i < msk.height; ++i) {
+		for (uint32_t j = 0; j < msk.width; ++j) {
 			expandedPixels[i * msk.width * 4 + j * 4 + 0] = msk.pixels[i * msk.width + j];
 			expandedPixels[i * msk.width * 4 + j * 4 + 1] = msk.pixels[i * msk.width + j];
 			expandedPixels[i * msk.width * 4 + j * 4 + 2] = msk.pixels[i * msk.width + j];
@@ -542,7 +545,7 @@ void Archive::extractPic(ArchiveEntry &entry) {
 	pic.width = header.width;
 	pic.height = header.height;
 
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		PicChunk &chunk = chunks[i];
 
 		auto size = chunk.size;
@@ -579,7 +582,7 @@ Bup Archive::getBup(const std::string &path) {
 	std::vector<BupChunk> chunks;
 	chunks.reserve(header.chunks);
 
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		auto chunk = br.read<BupChunk>();
 		chunks.push_back(chunk);
 	}
@@ -603,7 +606,7 @@ Bup Archive::getBup(const std::string &path) {
 	delete[] buffer;
 
 	bup.subentries.resize(header.chunks);
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		BupChunk &chunk = chunks[i];
 
 		auto &subentry = bup.subentries[i];
@@ -657,7 +660,7 @@ void Archive::extractBup(ArchiveEntry &bup) {
 	std::vector<BupChunk> chunks;
 	chunks.reserve(header.chunks);
 
-	for (int i = 0; i < header.chunks; ++i) {
+	for (uint32_t i = 0; i < header.chunks; ++i) {
 		auto chunk = br.read<BupChunk>();
 		chunks.push_back(chunk);
 	}
@@ -677,6 +680,17 @@ void Archive::extractBup(ArchiveEntry &bup) {
 
 	delete[] buffer;
 	delete[] data;
+}
+
+Png Archive::getPng(const std::string &path) {
+	auto pngData = read(path);
+	Png png;
+	png.name = path;
+	auto *data = stbi_load_from_memory(pngData.data(), static_cast<int>(pngData.size()), (int *)&png.width, (int *)&png.height, 0, 4);
+	png.pixels.resize(png.width * png.height * 4);
+	std::copy(data, data + png.pixels.size(), png.pixels.data());
+	stbi_image_free(data);
+	return png;
 }
 
 struct ArchiveChunk {

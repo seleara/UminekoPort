@@ -212,10 +212,10 @@ void AudioStream::writeCallback_(SoundIoOutStream *outStream, int frameCountMin,
 			//double timePassed = fadeClock_.reset();
 			switch (fadeDir_) {
 			case FadeDirection::FadeIn:
-				fadeCoeff_ += 1.0 / outStream->sample_rate;
+				fadeCoeff_ += 1.0f / outStream->sample_rate;
 				break;
 			case FadeDirection::FadeOut:
-				fadeCoeff_ -= 1.0 / outStream->sample_rate;
+				fadeCoeff_ -= 1.0f / outStream->sample_rate;
 				break;
 			default:
 				break;
@@ -224,8 +224,8 @@ void AudioStream::writeCallback_(SoundIoOutStream *outStream, int frameCountMin,
 			if (fadeCoeff_ < 0) {
 				fadeCoeff_ = 0;
 				fadeDir_ = FadeDirection::None;
-			} else if (fadeCoeff_ > 1.0) {
-				fadeCoeff_ = 1.0;
+			} else if (fadeCoeff_ > 1.0f) {
+				fadeCoeff_ = 1.0f;
 				fadeDir_ = FadeDirection::None;
 			}
 		}

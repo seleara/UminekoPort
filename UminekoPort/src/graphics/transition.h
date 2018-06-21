@@ -50,7 +50,7 @@ public:
 		}
 
 		auto trans = UniformBuffer::uniformBuffer<ShaderTransition>("trans");
-		trans->progress.x = transitionProgress_;
+		trans->progress.x = static_cast<float>(transitionProgress_);
 		trans.update();
 	}
 

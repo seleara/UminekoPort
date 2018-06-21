@@ -145,8 +145,8 @@ void ScriptDecompiler::decompile(const std::string &path, const std::vector<unsi
 	std::set<uint32_t> jumps;
 	std::map<uint32_t, std::string> lines;
 	
-	while (br.tellg() < data.size()) {
-		uint32_t offset = br.tellg();
+	while (br.tellg() < static_cast<int>(data.size())) {
+		uint32_t offset = static_cast<uint32_t>(br.tellg());
 		auto opcode = br.read<uint8_t>();
 		const auto &cmd = commands_[opcode];
 		FuncInfo funcInfo;

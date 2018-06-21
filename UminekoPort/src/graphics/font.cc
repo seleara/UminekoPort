@@ -110,7 +110,7 @@ const Glyph &Font::initGlyph(uint32_t index) {
 			if (nibbleCount == 0) {
 				++nibbleCount;
 				return (cache >> 4) & 0xf;
-			} else if (nibbleCount == 1) {
+			} else { //if (nibbleCount == 1) {
 				++nibbleCount;
 				return cache & 0xf;
 			}
@@ -212,7 +212,7 @@ Transform &Text::transform() {
 }
 
 void Text::update() {
-	progress_ += Time::deltaTime();
+	progress_ += static_cast<float>(Time::deltaTime());
 	if (progress_ >= 1.0f)
 		progress_ = 1.0f;
 }
@@ -318,7 +318,7 @@ void Text::render() {
 		return false;
 	};
 
-	auto addFurigana = [&](const std::unique_ptr<TextEntry> &glyph, int xStart, float fadeinLeft, float fadeinRight) {
+	auto addFurigana = [&](const std::unique_ptr<TextEntry> &glyph, float xStart, float fadeinLeft, float fadeinRight) {
 		if (glyph->type != TextEntryType::Glyph) return false;
 
 		const auto &tg = *(TextGlyph *)glyph.get();
@@ -385,8 +385,8 @@ void Text::render() {
 				if (pushKeyCount < currentSegment_) {
 					addGlyph(g, 0.0f, 0.0f);
 				} else {
-					float fadeinLeft = (currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
-					float fadeinRight = (currentSegmentGlyphIndex) / (float)currentSegmentGlyphCount;
+					float fadeinLeft = glm::max(0, currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
+					float fadeinRight = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
 					addGlyph(g, fadeinLeft, fadeinRight);
 					++currentSegmentGlyphIndex;
 				}
@@ -408,8 +408,8 @@ void Text::render() {
 				if (pushKeyCount < currentSegment_) {
 					addFurigana(g, furiganaStartX, 0.0f, 0.0f);
 				} else {
-					float fadeinLeft = (currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
-					float fadeinRight = (currentSegmentGlyphIndex) / (float)currentSegmentGlyphCount;
+					float fadeinLeft = glm::max(0, currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
+					float fadeinRight = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
 					addFurigana(g, furiganaStartX, fadeinLeft, fadeinRight);
 				}
 				const auto &tg = *(TextGlyph *)g.get();
@@ -422,8 +422,8 @@ void Text::render() {
 		if (pushKeyCount < currentSegment_) {
 			return addGlyph(glyph, 0.0f, 0.0f);
 		}
-		float fadeinLeft = (currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
-		float fadeinRight = (currentSegmentGlyphIndex) / (float)currentSegmentGlyphCount;
+		float fadeinLeft = glm::max(0, currentSegmentGlyphIndex - 1) / (float)currentSegmentGlyphCount;
+		float fadeinRight = currentSegmentGlyphIndex / (float)currentSegmentGlyphCount;
 		bool result = addGlyph(glyph, fadeinLeft, fadeinRight);
 		++currentSegmentGlyphIndex;
 		return result;
@@ -561,10 +561,10 @@ void Text::setupGlyphs() {
 				maxLineHeight = 0;
 			}
 
-			tg.uvs.x = xAdvance;
-			tg.uvs.y = yAdvance;
-			tg.uvs.z = xAdvance + tg.fontGlyph->width;
-			tg.uvs.w = yAdvance + tg.fontGlyph->height;
+			tg.uvs.x = static_cast<float>(xAdvance);
+			tg.uvs.y = static_cast<float>(yAdvance);
+			tg.uvs.z = static_cast<float>(xAdvance + tg.fontGlyph->width);
+			tg.uvs.w = static_cast<float>(yAdvance + tg.fontGlyph->height);
 
 			xAdvance += tg.fontGlyph->width + spacing;
 
@@ -589,7 +589,7 @@ void Text::renderFontTexture() {
 	auto addGlyph = [&](const TextGlyph &tg) {
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
- 		fontTex_.subImage(tg.uvs.x, tg.uvs.y, tg.fontGlyph->width, tg.fontGlyph->height, 1, tg.fontGlyph->pixels);
+ 		fontTex_.subImage(static_cast<int>(tg.uvs.x), static_cast<int>(tg.uvs.y), tg.fontGlyph->width, tg.fontGlyph->height, 1, tg.fontGlyph->pixels);
 	};
 
 	for (const auto &glyph : glyphs_) {
