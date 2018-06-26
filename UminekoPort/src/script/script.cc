@@ -9,53 +9,7 @@
 
 #include "scriptdecompiler.h"
 
-Script::Script(GraphicsContext &ctx, AudioManager &audio, bool commandTest) : ctx_(ctx), audio_(audio), commandTest_(commandTest), sd_(*this) {
-	commands_.resize(0x100, nullptr);
-	commands_[0x41] = &Script::command41;
-	commands_[0x42] = &Script::command42;
-	commands_[0x46] = &Script::command46;
-	commands_[0x47] = &Script::command47;
-	commands_[0x48] = &Script::command48;
-	commands_[0x49] = &Script::command49;
-	commands_[0x4A] = &Script::branch_on_variable;
-	commands_[0x4D] = &Script::push;
-	commands_[0x4E] = &Script::pop;
-	commands_[0x80] = &Script::unlock_content;
-	commands_[0x81] = &Script::command81;
-	commands_[0x83] = &Script::command83;
-	commands_[0x85] = &Script::command85;
-	commands_[0x86] = &Script::command86;
-	commands_[0x87] = &Script::command87;
-	commands_[0x88] = &Script::command88;
-	commands_[0x89] = &Script::command89;
-	commands_[0x8C] = &Script::command8C;
-	commands_[0x8D] = &Script::command8D;
-	commands_[0x9C] = &Script::command9C;
-	commands_[0x9D] = &Script::command9D;
-	commands_[0x9E] = &Script::command9E;
-	if (Engine::game == "umi" || Engine::game == "chiru")
-		commands_[0xA0] = &Script::play_se;
-	else
-		commands_[0xA0] = &Script::commandA0_higu;
-	commands_[0xA1] = &Script::stop_se;
-	commands_[0xA2] = &Script::stop_all_se;
-	commands_[0xA3] = &Script::set_se_volume;
-	commands_[0xA4] = &Script::commandA4;
-	commands_[0xA6] = &Script::commandA6;
-	commands_[0xB0] = &Script::set_title;
-	commands_[0xB1] = &Script::commandB1;
-	commands_[0xB3] = &Script::commandB3;
-	commands_[0xB4] = &Script::commandB4;
-	commands_[0xB6] = &Script::commandB6;
-	commands_[0xBE] = &Script::commandBE;
-	commands_[0xBF] = &Script::commandBF;
-	commands_[0xC1] = &Script::display_image;
-	commands_[0xC2] = &Script::set_layer_property;
-	commands_[0xC3] = &Script::commandC3;
-	commands_[0xC9] = &Script::commandC9;
-	commands_[0xCA] = &Script::commandCA;
-	commands_[0xCB] = &Script::commandCB;
-}
+Script::Script(GraphicsContext &ctx, AudioManager &audio, bool commandTest) : ctx_(ctx), audio_(audio), commandTest_(commandTest), sd_(*this) {}
 
 void Script::load(const std::string &path, Archive &archive) {
 	path_ = path;
@@ -78,6 +32,19 @@ void Script::load(const std::string &path, Archive &archive) {
 	br.skip(12);
 
 	version_ = unknown2;
+
+	switch (version_) {
+	case 0x01:
+		setupCommandsUmineko();
+		break;
+	case 0x41:
+		setupCommandsHigurashi();
+		break;
+	default:
+		std::cerr << "Warning: Script version 0x" << std::hex << version_ << std::dec << " not recognized. Setting up commands for version 0x01, but they will probably be incorrect.";
+		setupCommandsUmineko();
+		break;
+	}
 
 	scriptOffset_ = br.read<uint32_t>();
 
@@ -173,6 +140,96 @@ void Script::executeCommand(BinaryReader &br, Archive &archive) {
 	(this->*cf)(br, archive);
 }
 
+void Script::setupCommandsUmineko() {
+	commands_.resize(0x100, nullptr);
+	commands_[0x41] = &Script::command41;
+	commands_[0x42] = &Script::command42;
+	commands_[0x46] = &Script::command46;
+	commands_[0x47] = &Script::command47;
+	commands_[0x48] = &Script::command48;
+	commands_[0x49] = &Script::command49;
+	commands_[0x4A] = &Script::branch_on_variable;
+	commands_[0x4D] = &Script::push;
+	commands_[0x4E] = &Script::pop;
+	commands_[0x80] = &Script::unlock_content;
+	commands_[0x81] = &Script::command81;
+	commands_[0x83] = &Script::command83;
+	commands_[0x85] = &Script::command85;
+	commands_[0x86] = &Script::command86;
+	commands_[0x87] = &Script::command87;
+	commands_[0x88] = &Script::command88;
+	commands_[0x89] = &Script::command89;
+	commands_[0x8C] = &Script::command8C;
+	commands_[0x8D] = &Script::do_transition;
+	commands_[0x9C] = &Script::play_bgm;
+	commands_[0x9D] = &Script::stop_bgm;
+	commands_[0x9E] = &Script::command9E;
+	commands_[0xA0] = &Script::play_se;
+	commands_[0xA1] = &Script::stop_se;
+	commands_[0xA2] = &Script::stop_all_se;
+	commands_[0xA3] = &Script::set_se_volume;
+	commands_[0xA4] = &Script::commandA4;
+	commands_[0xA6] = &Script::commandA6;
+	commands_[0xB0] = &Script::set_title;
+	commands_[0xB1] = &Script::commandB1;
+	commands_[0xB3] = &Script::commandB3;
+	commands_[0xB4] = &Script::commandB4;
+	commands_[0xB6] = &Script::commandB6;
+	commands_[0xBE] = &Script::commandBE;
+	commands_[0xBF] = &Script::commandBF;
+	commands_[0xC1] = &Script::display_image;
+	commands_[0xC2] = &Script::set_layer_property;
+	commands_[0xC3] = &Script::commandC3;
+	commands_[0xC9] = &Script::commandC9;
+	commands_[0xCA] = &Script::commandCA;
+	commands_[0xCB] = &Script::commandCB;
+}
+
+void Script::setupCommandsHigurashi() {
+	commands_.resize(0x100, nullptr);
+	commands_[0x41] = &Script::command41;
+	commands_[0x42] = &Script::command42;
+	commands_[0x46] = &Script::command46;
+	commands_[0x47] = &Script::command47;
+	commands_[0x48] = &Script::command48;
+	commands_[0x49] = &Script::command49;
+	commands_[0x4A] = &Script::branch_on_variable;
+	commands_[0x4D] = &Script::push;
+	commands_[0x4E] = &Script::pop;
+	commands_[0x80] = &Script::unlock_content;
+	commands_[0x81] = &Script::command81;
+	commands_[0x83] = &Script::command83;
+	commands_[0x85] = &Script::command85;
+	commands_[0x86] = &Script::command86;
+	commands_[0x87] = &Script::command87;
+	commands_[0x88] = &Script::command88;
+	commands_[0x89] = &Script::command89;
+	commands_[0x8C] = &Script::command8C;
+	commands_[0x8D] = &Script::do_transition;
+	commands_[0x9C] = &Script::play_bgm;
+	commands_[0x9D] = &Script::stop_bgm;
+	commands_[0x9E] = &Script::command9E;
+	commands_[0xA0] = &Script::commandA0_higu;
+	commands_[0xA1] = &Script::stop_se;
+	commands_[0xA2] = &Script::stop_all_se;
+	commands_[0xA3] = &Script::set_se_volume;
+	commands_[0xA4] = &Script::commandA4;
+	commands_[0xA6] = &Script::commandA6;
+	commands_[0xB0] = &Script::set_title;
+	commands_[0xB1] = &Script::commandB1;
+	commands_[0xB3] = &Script::commandB3;
+	commands_[0xB4] = &Script::commandB4;
+	commands_[0xB6] = &Script::commandB6;
+	commands_[0xBE] = &Script::commandBE;
+	commands_[0xBF] = &Script::commandBF;
+	commands_[0xC1] = &Script::display_image;
+	commands_[0xC2] = &Script::set_layer_property;
+	commands_[0xC3] = &Script::commandC3;
+	commands_[0xC9] = &Script::commandC9;
+	commands_[0xCA] = &Script::commandCA;
+	commands_[0xCB] = &Script::commandCB;
+}
+
 void Script::command87(BinaryReader &br, Archive &archive) {
 	auto segment = br.read<int16_t>();
 	ctx_.message().waitForMessageSegment(segment);
@@ -183,7 +240,7 @@ void Script::command88(BinaryReader &br, Archive &archive) {
 	//ctx_.returnToMessage();
 }
 
-void Script::command8D(BinaryReader &br, Archive &archive) {
+void Script::do_transition(BinaryReader &br, Archive &archive) {
 	uint8_t unknown = 0, unknown2 = 0;
 	if (Engine::game == "chiru") {
 		unknown = br.read<uint8_t>();
@@ -214,7 +271,7 @@ void Script::command8D(BinaryReader &br, Archive &archive) {
 	ctx_.applyLayers();
 }
 
-void Script::command9C(BinaryReader &br, Archive &archive) {
+void Script::play_bgm(BinaryReader &br, Archive &archive) {
 	auto bgmId = getVariable(br.read<uint16_t>());
 	auto unk1 = br.read<uint16_t>();
 	auto volume = br.read<uint32_t>(); // B4 00 00 00 - volume?
@@ -222,7 +279,7 @@ void Script::command9C(BinaryReader &br, Archive &archive) {
 	audio_.playBGM("bgm/" + std::string(bgms_[bgmId].name) + ".at3", volume / 255.0f);
 }
 
-void Script::command9D(BinaryReader &br, Archive &archive) {
+void Script::stop_bgm(BinaryReader &br, Archive &archive) {
 	auto frames = getVariable(br.read<uint16_t>());
 
 	audio_.stopBGM(frames);
@@ -249,6 +306,11 @@ void Script::stop_all_se(BinaryReader &br, Archive &archive) {
 	auto frames = getVariable(br.read<uint16_t>());
 
 	audio_.stopAllSE(frames);
+}
+
+void Script::set_se_volume(BinaryReader &br, Archive &archive) {
+	auto index = getVariable(br.read<uint16_t>());
+	audio_.setSEVolume(index, br.read<uint32_t>() / 255.0f);
 }
 
 void Script::display_image(BinaryReader &br, Archive &archive) {

@@ -84,7 +84,7 @@ void AudioManager::setBGMVolume(float volume) {
 	bgm_->setMasterVolume(volume);
 }
 
-void setSEVolume(int channel, float volume) {
+void AudioManager::setSEVolume(int channel, float volume) {
 	// TODO: Implement
 }
 

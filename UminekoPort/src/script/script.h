@@ -119,6 +119,9 @@ private:
 
 	void executeCommand(BinaryReader &br, Archive &archive);
 
+	void setupCommandsUmineko();
+	void setupCommandsHigurashi();
+
 	int16_t getVariable(uint16_t value) {
 		// Negative values that aren't variables also work so not 100% sure where the "cut-off point" is
 		if ((value >> 0xC) == 0x8) {
@@ -259,7 +262,7 @@ private:
 	}
 
 	/**
-	 * Opcode: 4A
+	 * [4A] branch_on_variable(var:u16, count:u16, offset1:u32[, offset2:u32...])
 	 * Checks the value of the first argument and jumps to the corresponding address in the argument list
 	 */
 	void branch_on_variable(BinaryReader &br, Archive &archive) {
@@ -277,7 +280,7 @@ private:
 	}
 
 	/**
-	 * Opcode: 4D
+	 * [4D] push(count:u8, val1:u16[, val2:u16...])
 	 */
 	void push(BinaryReader &br, Archive &archive) {
 		auto count = br.read<uint8_t>();
@@ -287,7 +290,7 @@ private:
 	}
 
 	/**
-	* Opcode: 4E
+	* [4E] pop(count:u8, var1:u16[, var2:u16...])
 	*/
 	void pop(BinaryReader &br, Archive &archive) {
 		auto count = br.read<uint8_t>();
@@ -304,12 +307,13 @@ private:
 	}
 
 	/**
-	 * Opcode: 80
+	 * [80] unlock_content(id:u16)
 	 */
 	void unlock_content(BinaryReader &br, Archive &archive) {
-		br.skip(3);
+		/*br.skip(3);
 		auto count = br.read<uint8_t>() & ~0x80;
-		br.skip(2 * count); // ???
+		br.skip(2 * count); // ???*/
+		auto id = getVariable(br.read<uint16_t>());
 	}
 	void command81(BinaryReader &br, Archive &archive) {
 		br.skip(4);
@@ -343,9 +347,22 @@ private:
 		auto header = readString8(br);
 		auto content = readString8(br);
 	}
-	void command8D(BinaryReader &br, Archive &archive);
-	void command9C(BinaryReader &br, Archive &archive);
-	void command9D(BinaryReader &br, Archive &archive);
+
+	/**
+	 * [8D] do_transition(...)
+	 */
+	void do_transition(BinaryReader &br, Archive &archive);
+
+	/**
+	 * [9C] play_bgm(id:u16, unk:u16, volume:u32)
+	 */
+	void play_bgm(BinaryReader &br, Archive &archive);
+
+	/**
+	 * [9D] stop_bgm(frames:u16)
+	 */
+	void stop_bgm(BinaryReader &br, Archive &archive);
+
 	void command9E(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}
@@ -371,10 +388,8 @@ private:
 	/**
 	 * [A3] set_se_volume(channel:u16, volume:u32)
 	 */
-	void set_se_volume(BinaryReader &br, Archive &archive) {
-		auto index = getVariable(br.read<uint16_t>());
-		audio_.setSEVolume(index, br.read<uint32_t>() / 255.0f);
-	}
+	void set_se_volume(BinaryReader &br, Archive &archive);
+
 	void commandA4(BinaryReader &br, Archive &archive) {
 		br.skip(7); // Japanese character used in here?
 	}
