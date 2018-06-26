@@ -19,6 +19,12 @@ void TextureResource::create(int width, int height, bool normalized) {
 	size_.y = height;
 }
 
+void TextureResource::clear() {
+	auto texEnum = normalized_ ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE;
+	glBindTexture(texEnum, texture_);
+	glTexImage2D(texEnum, 0, GL_RGBA8, size_.x, size_.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+}
+
 void TextureResource::subImage(int x, int y, int width, int height, int bpp, const std::vector<unsigned char> &pixels) {
 	auto texEnum = normalized_ ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE;
 	glBindTexture(texEnum, texture_);

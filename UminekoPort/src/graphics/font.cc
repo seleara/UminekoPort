@@ -592,6 +592,9 @@ void Text::renderFontTexture() {
  		fontTex_.subImage(static_cast<int>(tg.uvs.x), static_cast<int>(tg.uvs.y), tg.fontGlyph->width, tg.fontGlyph->height, 1, tg.fontGlyph->pixels);
 	};
 
+	std::vector<unsigned char> blank(fontTex_.size().x * fontTex_.size().y, 0);
+	fontTex_.subImage(0, 0, fontTex_.size().x, fontTex_.size().y, 1, blank);
+
 	for (const auto &glyph : glyphs_) {
 		if (glyph->type == TextEntryType::Ruby) {
 			const auto *tr = (TextRuby *)glyph.get();

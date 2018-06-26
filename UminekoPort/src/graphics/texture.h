@@ -16,6 +16,7 @@ public:
 		glDeleteTextures(1, &texture_);
 	}
 	void create(int width, int height, bool normalized = false);
+	void clear();
 	void subImage(int x, int y, int width, int height, int bpp, const std::vector<unsigned char> &pixels);
 	void load(const std::string &path, Archive &archive);
 	void load(const char *pixels, int width, int height, int bpp, bool normalized = false);
@@ -56,6 +57,12 @@ public:
 
 	void create(int width, int height, bool normalized = false) {
 		resource_ = TextureCache::create(width, height, normalized);
+	}
+
+	void clear() {
+		if (!resource_)
+			throw std::runtime_error("Cannot clear a null texture.");
+		resource_->clear();
 	}
 
 	void subImage(int x, int y, int width, int height, int bpp, const std::vector<unsigned char> &pixels) {

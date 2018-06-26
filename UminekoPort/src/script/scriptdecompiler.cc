@@ -21,7 +21,7 @@ std::vector<std::string> ScriptDecompiler::functionNames_ = {
 	"command_70", "command_71", "command_72", "command_73", "command_74", "command_75", "command_76", "command_77", "command_78", "command_79", "command_7A", "command_7B", "command_7C", "command_7D", "command_7E", "command_7F",
 	"unlock_content", "command_81", "command_82", "wait", "command_84", "command_85", "display_text", "wait_msg_advance", "return_to_message", "hide_text", "command_8A", "command_8B", "show_choices", "do_transition", "command_8E", "command_8F",
 	"command_90", "command_91", "command_92", "command_93", "command_94", "command_95", "command_96", "command_97", "command_98", "command_99", "command_9A", "command_9B", "play_bgm", "stop_bgm", "command_9E", "command_9F",
-	"play_se", "stop_se", "stop_all_se", "set_se_volume", "command_A4", "command_A5", "rumble", "command_A7", "command_A8", "command_A9", "command_AA", "command_AB", "command_AC", "command_AD", "command_AE", "command_AF",
+	"play_se", "stop_se", "stop_all_se", "set_se_volume", "command_A4", "command_A5", "shake", "command_A7", "command_A8", "command_A9", "command_AA", "command_AB", "command_AC", "command_AD", "command_AE", "command_AF",
 	"set_title", "play_movie", "movie_related_B2", "movie_related_B3", "movie_related_B4", "command_B5", "autosave", "command_B7", "command_B8", "command_B9", "command_BA", "command_BB", "command_BC", "command_BD", "unlock_trophy", "command_BF",
 	"command_C0", "display_image", "set_layer_property", "command_C3", "command_C4", "command_C5", "command_C6", "command_C7", "command_C8", "command_C9", "command_CA", "command_CB", "command_CC", "command_CD", "command_CE", "command_CF",
 	"command_D0", "command_D1", "command_D2", "command_D3", "command_D4", "command_D5", "command_D6", "command_D7", "command_D8", "command_D9", "command_DA", "command_DB", "command_DC", "command_DD", "command_DE", "command_DF",
@@ -80,7 +80,7 @@ void ScriptDecompiler::setup() {
 	commands_[0xA0] = { 0xA0, { arg(SDType::Bytes, 10) } }; // special case?
 	commands_[0xA1] = { 0xA1, { arg(SDType::UInt16), arg(SDType::UInt16) } }; // channel, frames
 	commands_[0xA2] = { 0xA2, { arg(SDType::UInt16) } }; // frames
-	commands_[0xA3] = { 0xA3, { arg(SDType::UInt16), arg(SDType::Bytes, 4) } };
+	commands_[0xA3] = { 0xA3, { arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::Bytes, 2) } };
 	commands_[0xA4] = { 0xA4, { arg(SDType::Bytes, 4) } };
 	commands_[0xA6] = { 0xA6, { arg(SDType::Bytes, 4) } };
 	commands_[0xAE] = { 0xAE, { arg(SDType::Bytes, 2) } };

@@ -142,24 +142,24 @@ void Script::executeCommand(BinaryReader &br, Archive &archive) {
 
 void Script::setupCommandsUmineko() {
 	commands_.resize(0x100, nullptr);
-	commands_[0x41] = &Script::command41;
+	commands_[0x41] = &Script::set_variable;
 	commands_[0x42] = &Script::command42;
-	commands_[0x46] = &Script::command46;
-	commands_[0x47] = &Script::command47;
-	commands_[0x48] = &Script::command48;
-	commands_[0x49] = &Script::command49;
+	commands_[0x46] = &Script::jump_if;
+	commands_[0x47] = &Script::jump;
+	commands_[0x48] = &Script::call;
+	commands_[0x49] = &Script::return_;
 	commands_[0x4A] = &Script::branch_on_variable;
 	commands_[0x4D] = &Script::push;
 	commands_[0x4E] = &Script::pop;
 	commands_[0x80] = &Script::unlock_content;
 	commands_[0x81] = &Script::command81;
-	commands_[0x83] = &Script::command83;
+	commands_[0x83] = &Script::wait;
 	commands_[0x85] = &Script::command85;
-	commands_[0x86] = &Script::command86;
-	commands_[0x87] = &Script::command87;
-	commands_[0x88] = &Script::command88;
-	commands_[0x89] = &Script::command89;
-	commands_[0x8C] = &Script::command8C;
+	commands_[0x86] = &Script::display_text;
+	commands_[0x87] = &Script::wait_msg_advance;
+	commands_[0x88] = &Script::return_to_message;
+	commands_[0x89] = &Script::hide_text;
+	commands_[0x8C] = &Script::show_choices;
 	commands_[0x8D] = &Script::do_transition;
 	commands_[0x9C] = &Script::play_bgm;
 	commands_[0x9D] = &Script::stop_bgm;
@@ -169,13 +169,14 @@ void Script::setupCommandsUmineko() {
 	commands_[0xA2] = &Script::stop_all_se;
 	commands_[0xA3] = &Script::set_se_volume;
 	commands_[0xA4] = &Script::commandA4;
-	commands_[0xA6] = &Script::commandA6;
+	commands_[0xA6] = &Script::shake;
 	commands_[0xB0] = &Script::set_title;
-	commands_[0xB1] = &Script::commandB1;
-	commands_[0xB3] = &Script::commandB3;
-	commands_[0xB4] = &Script::commandB4;
-	commands_[0xB6] = &Script::commandB6;
-	commands_[0xBE] = &Script::commandBE;
+	commands_[0xB1] = &Script::play_movie;
+	commands_[0xB2] = &Script::movie_related_B2;
+	commands_[0xB3] = &Script::movie_related_B3;
+	commands_[0xB4] = &Script::movie_related_B4;
+	commands_[0xB6] = &Script::autosave;
+	commands_[0xBE] = &Script::unlock_trophy;
 	commands_[0xBF] = &Script::commandBF;
 	commands_[0xC1] = &Script::display_image;
 	commands_[0xC2] = &Script::set_layer_property;
@@ -187,24 +188,24 @@ void Script::setupCommandsUmineko() {
 
 void Script::setupCommandsHigurashi() {
 	commands_.resize(0x100, nullptr);
-	commands_[0x41] = &Script::command41;
+	commands_[0x41] = &Script::set_variable;
 	commands_[0x42] = &Script::command42;
-	commands_[0x46] = &Script::command46;
-	commands_[0x47] = &Script::command47;
-	commands_[0x48] = &Script::command48;
-	commands_[0x49] = &Script::command49;
+	commands_[0x46] = &Script::jump_if;
+	commands_[0x47] = &Script::jump;
+	commands_[0x48] = &Script::call;
+	commands_[0x49] = &Script::return_;
 	commands_[0x4A] = &Script::branch_on_variable;
 	commands_[0x4D] = &Script::push;
 	commands_[0x4E] = &Script::pop;
 	commands_[0x80] = &Script::unlock_content;
 	commands_[0x81] = &Script::command81;
-	commands_[0x83] = &Script::command83;
+	commands_[0x83] = &Script::wait;
 	commands_[0x85] = &Script::command85;
-	commands_[0x86] = &Script::command86;
-	commands_[0x87] = &Script::command87;
-	commands_[0x88] = &Script::command88;
-	commands_[0x89] = &Script::command89;
-	commands_[0x8C] = &Script::command8C;
+	commands_[0x86] = &Script::display_text;
+	commands_[0x87] = &Script::wait_msg_advance;
+	commands_[0x88] = &Script::return_to_message;
+	commands_[0x89] = &Script::hide_text;
+	commands_[0x8C] = &Script::show_choices;
 	commands_[0x8D] = &Script::do_transition;
 	commands_[0x9C] = &Script::play_bgm;
 	commands_[0x9D] = &Script::stop_bgm;
@@ -214,13 +215,14 @@ void Script::setupCommandsHigurashi() {
 	commands_[0xA2] = &Script::stop_all_se;
 	commands_[0xA3] = &Script::set_se_volume;
 	commands_[0xA4] = &Script::commandA4;
-	commands_[0xA6] = &Script::commandA6;
+	commands_[0xA6] = &Script::shake;
 	commands_[0xB0] = &Script::set_title;
-	commands_[0xB1] = &Script::commandB1;
-	commands_[0xB3] = &Script::commandB3;
-	commands_[0xB4] = &Script::commandB4;
-	commands_[0xB6] = &Script::commandB6;
-	commands_[0xBE] = &Script::commandBE;
+	commands_[0xB1] = &Script::play_movie;
+	commands_[0xB2] = &Script::movie_related_B2;
+	commands_[0xB3] = &Script::movie_related_B3;
+	commands_[0xB4] = &Script::movie_related_B4;
+	commands_[0xB6] = &Script::autosave;
+	commands_[0xBE] = &Script::unlock_trophy;
 	commands_[0xBF] = &Script::commandBF;
 	commands_[0xC1] = &Script::display_image;
 	commands_[0xC2] = &Script::set_layer_property;
@@ -230,13 +232,13 @@ void Script::setupCommandsHigurashi() {
 	commands_[0xCB] = &Script::commandCB;
 }
 
-void Script::command87(BinaryReader &br, Archive &archive) {
+void Script::wait_msg_advance(BinaryReader &br, Archive &archive) {
 	auto segment = br.read<int16_t>();
 	ctx_.message().waitForMessageSegment(segment);
 	pause();
 }
 
-void Script::command88(BinaryReader &br, Archive &archive) {
+void Script::return_to_message(BinaryReader &br, Archive &archive) {
 	//ctx_.returnToMessage();
 }
 
@@ -301,7 +303,6 @@ void Script::stop_se(BinaryReader &br, Archive &archive) {
 	audio_.stopSE(channel, frames);
 }
 
-// stop_all_se
 void Script::stop_all_se(BinaryReader &br, Archive &archive) {
 	auto frames = getVariable(br.read<uint16_t>());
 
@@ -310,7 +311,9 @@ void Script::stop_all_se(BinaryReader &br, Archive &archive) {
 
 void Script::set_se_volume(BinaryReader &br, Archive &archive) {
 	auto index = getVariable(br.read<uint16_t>());
-	audio_.setSEVolume(index, br.read<uint32_t>() / 255.0f);
+	auto volume = br.read<uint16_t>() / 255.0f;
+	auto framesMaybe = br.read<uint16_t>();
+	audio_.setSEVolume(index, volume);
 }
 
 void Script::display_image(BinaryReader &br, Archive &archive) {

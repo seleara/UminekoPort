@@ -155,10 +155,12 @@ private:
 		return str;
 	}
 
-	// set_variable
-	//  Perform arithmetic operations and store the result in the specified variable
-	//  op=, ???, op+=, op-=, op*=, op/=
-	void command41(BinaryReader &br, Archive &archive) {
+	/**
+	 * [41] set_variable(op:u8, var:u16, val:u16, ...)
+	 * Perform arithmetic operations and store the result in the specified variable
+	 *  op=, ???, op+=, op-=, op*=, op/=
+	 */
+	void set_variable(BinaryReader &br, Archive &archive) {
 		auto operation = br.read<uint8_t>();
 		auto variable = br.read<uint16_t>();
 		auto value = getVariable(br.read<uint16_t>());
@@ -201,7 +203,11 @@ private:
 	void command42(BinaryReader &br, Archive &archive) {
 		br.skip(14);
 	}
-	void command46(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [46] jump_if
+	 */
+	void jump_if(BinaryReader &br, Archive &archive) {
 		auto operation = br.read<uint8_t>();
 		auto value = getVariable(br.read<uint16_t>());
 		auto compareTo = getVariable(br.read<uint16_t>());
@@ -244,16 +250,28 @@ private:
 			throw std::runtime_error("Unsupported jump_if operation: " + std::to_string(operation));
 		}
 	}
-	void command47(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [47] jump(offset:u32)
+	 */
+	void jump(BinaryReader &br, Archive &archive) {
 		auto offset = br.read<uint32_t>();
 		jump(offset);
 	}
-	void command48(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [48] call(offset:u32)
+	 */
+	void call(BinaryReader &br, Archive &archive) {
 		auto offset = br.read<uint32_t>();
 		callStack_.push_back(static_cast<uint32_t>(br.tellg()));
 		jump(offset);
 	}
-	void command49(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [49] return
+	 */
+	void return_(BinaryReader &br, Archive &archive) {
 		if (callStack_.size() == 0) {
 			throw std::runtime_error("Cannot return without having called a function first.");
 		}
@@ -315,18 +333,28 @@ private:
 		br.skip(2 * count); // ???*/
 		auto id = getVariable(br.read<uint16_t>());
 	}
+
 	void command81(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}
-	void command83(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [83] wait(frames:u16)
+	 */
+	void wait(BinaryReader &br, Archive &archive) {
 		auto frames = br.read<uint16_t>();
 		ctx_.wait(frames);
 		pause();
 	}
+
 	void command85(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}
-	void command86(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [86] display_text(id:u16, unk:u8, pause:u8, text:str16)
+	 */
+	void display_text(BinaryReader &br, Archive &archive) {
 		ctx_.applyLayers();
 		auto msgId = getVariable(br.read<uint16_t>());
 		br.skip(1); // ???
@@ -336,16 +364,32 @@ private:
 		if (shouldPause)
 			pause();
 	}
-	void command87(BinaryReader &br, Archive &archive);
-	void command88(BinaryReader &br, Archive &archive);
-	void command89(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [87] wait_msg_advance(segment:u16)
+	 */
+	void wait_msg_advance(BinaryReader &br, Archive &archive);
+
+	/**
+	 * [88] return_to_message()
+	 */
+	void return_to_message(BinaryReader &br, Archive &archive);
+
+	/**
+	 * [89] hide_text()
+	 */
+	void hide_text(BinaryReader &br, Archive &archive) {
 		ctx_.message().hide();
 	}
-	void command8C(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [8C] show_choices(unk:u32, var:u16, unk2:i16, title:str8, choices:splitstr8)
+	 */
+	void show_choices(BinaryReader &br, Archive &archive) {
 		br.skip(5);
 		br.skip(3); // ???
-		auto header = readString8(br);
-		auto content = readString8(br);
+		auto title = readString8(br);
+		auto choices = readString8(br);
 	}
 
 	/**
@@ -386,15 +430,20 @@ private:
 	void stop_all_se(BinaryReader &br, Archive &archive);
 
 	/**
-	 * [A3] set_se_volume(channel:u16, volume:u32)
+	 * [A3] set_se_volume(channel:u16, volume:u16, frames?:u16)
 	 */
 	void set_se_volume(BinaryReader &br, Archive &archive);
 
 	void commandA4(BinaryReader &br, Archive &archive) {
 		br.skip(7); // Japanese character used in here?
 	}
-	void commandA6(BinaryReader &br, Archive &archive) {
-		br.skip(7); // ???
+
+	/**
+	 * [A6] shake(unk1:u16, unk2:u16)
+	 */
+	void shake(BinaryReader &br, Archive &archive) {
+		auto unk1 = getVariable(br.read<uint16_t>());
+		auto unk2 = getVariable(br.read<uint16_t>());
 	}
 
 	/**
@@ -405,21 +454,46 @@ private:
 		auto str = readString8(br);
 		// ???
 	}
-	void commandB1(BinaryReader &br, Archive &archive) {
-		br.skip(3);
+
+	/**
+	 * [B1] play_movie(id:u16)
+	 */
+	void play_movie(BinaryReader &br, Archive &archive) {
+		auto movieId = getVariable(br.read<uint16_t>());
 	}
-	void commandB3(BinaryReader &br, Archive &archive) {
-		// ???
-	}
-	void commandB4(BinaryReader &br, Archive &archive) {
-		//br.skip(4);
-	}
-	void commandB6(BinaryReader &br, Archive &archive) {
-		// ???
-	}
-	void commandBE(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [B2] movie_related_B2(unk:u16)
+	 */
+	void movie_related_B2(BinaryReader &br, Archive &archive) {
 		br.skip(2);
 	}
+
+	/**
+	 * [B3] movie_related_B3()
+	 */
+	void movie_related_B3(BinaryReader &br, Archive &archive) {
+	}
+
+	/**
+	 * [B4] movie_related_B4()
+	 */
+	void movie_related_B4(BinaryReader &br, Archive &archive) {
+	}
+
+	/**
+	 * [B6] autosave()
+	 */
+	void autosave(BinaryReader &br, Archive &archive) {
+	}
+
+	/**
+	 * [BE] unlock_trophy(id:u16)
+	 */
+	void unlock_trophy(BinaryReader &br, Archive &archive) {
+		auto trophyId = getVariable(br.read<uint16_t>());
+	}
+
 	void commandBF(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}
