@@ -258,9 +258,11 @@ private:
 		callStack_.pop_back();
 	}
 
-	// branch_on_variable
-	//  Checks the value of the first argument and jumps to the corresponding address in the argument list
-	void command4A(BinaryReader &br, Archive &archive) {
+	/**
+	 * Opcode: 4A
+	 * Checks the value of the first argument and jumps to the corresponding address in the argument list
+	 */
+	void branch_on_variable(BinaryReader &br, Archive &archive) {
 		auto value = getVariable(br.read<uint16_t>());
 		auto count = br.read<uint16_t>();
 		std::vector<uint32_t> offsets;
@@ -273,13 +275,21 @@ private:
 		else
 			jump(offsets[value]);
 	}
-	void command4D(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * Opcode: 4D
+	 */
+	void push(BinaryReader &br, Archive &archive) {
 		auto count = br.read<uint8_t>();
 		for (int i = 0; i < count; ++i) {
 			varStack_.push_back(getVariable(br.read<uint16_t>()));
 		}
 	}
-	void command4E(BinaryReader &br, Archive &archive) {
+
+	/**
+	* Opcode: 4E
+	*/
+	void pop(BinaryReader &br, Archive &archive) {
 		auto count = br.read<uint8_t>();
 		// Think this pop order is correct
 		for (int i = 0; i < count; ++i) {
@@ -292,7 +302,11 @@ private:
 			varStack_.pop_back();
 		}
 	}
-	void command80(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * Opcode: 80
+	 */
+	void unlock_content(BinaryReader &br, Archive &archive) {
 		br.skip(3);
 		auto count = br.read<uint8_t>() & ~0x80;
 		br.skip(2 * count); // ???
@@ -335,18 +349,31 @@ private:
 	void command9E(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}
-	// play_se(channel:u16, unk:u16, volume:u32)
-	void commandA0_umi(BinaryReader &br, Archive &archive);
+	/**
+	 * [A0] play_se(channel:u16, unk:u16, volume:u32)
+	 */
+	void play_se(BinaryReader &br, Archive &archive);
 	void commandA0_higu(BinaryReader &br, Archive &archive) {
 		// same as umi B0?
-		commandB0(br, archive);
+		set_title(br, archive);
 	}
-	// stop_se(channel:u16, frames:u16)
-	void commandA1(BinaryReader &br, Archive &archive);
-	// stop_all_se(frames:u16)
-	void commandA2(BinaryReader &br, Archive &archive);
-	void commandA3(BinaryReader &br, Archive &archive) {
-		br.skip(6);
+
+	/**
+	 * [A1] stop_se(channel:u16, frames:u16)
+	 */
+	void stop_se(BinaryReader &br, Archive &archive);
+
+	/**
+	 * [A2] stop_all_se(frames:u16)
+	 */
+	void stop_all_se(BinaryReader &br, Archive &archive);
+
+	/**
+	 * [A3] set_se_volume(channel:u16, volume:u32)
+	 */
+	void set_se_volume(BinaryReader &br, Archive &archive) {
+		auto index = getVariable(br.read<uint16_t>());
+		audio_.setSEVolume(index, br.read<uint32_t>() / 255.0f);
 	}
 	void commandA4(BinaryReader &br, Archive &archive) {
 		br.skip(7); // Japanese character used in here?
@@ -354,7 +381,11 @@ private:
 	void commandA6(BinaryReader &br, Archive &archive) {
 		br.skip(7); // ???
 	}
-	void commandB0(BinaryReader &br, Archive &archive) {
+
+	/**
+	 * [B0] set_title(unk:u16, title:string)
+	 */
+	void set_title(BinaryReader &br, Archive &archive) {
 		auto unk = br.read<uint16_t>();
 		auto str = readString8(br);
 		// ???
@@ -377,10 +408,16 @@ private:
 	void commandBF(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}
-	void displayImage(BinaryReader &br, Archive &archive);
 
-	// Set layer property
-	void commandC2(BinaryReader &br, Archive &archive);
+	/**
+	 * [C1] display_image(...)
+	 */
+	void display_image(BinaryReader &br, Archive &archive);
+
+	/**
+	 * [C2] set_layer_property(layer:u16, property:u16, unk:u8, ...)
+	 */
+	void set_layer_property(BinaryReader &br, Archive &archive);
 	void commandC3(BinaryReader &br, Archive &archive) {
 		br.skip(4);
 	}

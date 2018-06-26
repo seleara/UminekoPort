@@ -17,10 +17,10 @@ Script::Script(GraphicsContext &ctx, AudioManager &audio, bool commandTest) : ct
 	commands_[0x47] = &Script::command47;
 	commands_[0x48] = &Script::command48;
 	commands_[0x49] = &Script::command49;
-	commands_[0x4A] = &Script::command4A;
-	commands_[0x4D] = &Script::command4D;
-	commands_[0x4E] = &Script::command4E;
-	commands_[0x80] = &Script::command80;
+	commands_[0x4A] = &Script::branch_on_variable;
+	commands_[0x4D] = &Script::push;
+	commands_[0x4E] = &Script::pop;
+	commands_[0x80] = &Script::unlock_content;
 	commands_[0x81] = &Script::command81;
 	commands_[0x83] = &Script::command83;
 	commands_[0x85] = &Script::command85;
@@ -34,23 +34,23 @@ Script::Script(GraphicsContext &ctx, AudioManager &audio, bool commandTest) : ct
 	commands_[0x9D] = &Script::command9D;
 	commands_[0x9E] = &Script::command9E;
 	if (Engine::game == "umi" || Engine::game == "chiru")
-		commands_[0xA0] = &Script::commandA0_umi;
+		commands_[0xA0] = &Script::play_se;
 	else
 		commands_[0xA0] = &Script::commandA0_higu;
-	commands_[0xA1] = &Script::commandA1;
-	commands_[0xA2] = &Script::commandA2;
-	commands_[0xA3] = &Script::commandA3;
+	commands_[0xA1] = &Script::stop_se;
+	commands_[0xA2] = &Script::stop_all_se;
+	commands_[0xA3] = &Script::set_se_volume;
 	commands_[0xA4] = &Script::commandA4;
 	commands_[0xA6] = &Script::commandA6;
-	commands_[0xB0] = &Script::commandB0;
+	commands_[0xB0] = &Script::set_title;
 	commands_[0xB1] = &Script::commandB1;
 	commands_[0xB3] = &Script::commandB3;
 	commands_[0xB4] = &Script::commandB4;
 	commands_[0xB6] = &Script::commandB6;
 	commands_[0xBE] = &Script::commandBE;
 	commands_[0xBF] = &Script::commandBF;
-	commands_[0xC1] = &Script::displayImage;
-	commands_[0xC2] = &Script::commandC2;
+	commands_[0xC1] = &Script::display_image;
+	commands_[0xC2] = &Script::set_layer_property;
 	commands_[0xC3] = &Script::commandC3;
 	commands_[0xC9] = &Script::commandC9;
 	commands_[0xCA] = &Script::commandCA;
@@ -228,7 +228,7 @@ void Script::command9D(BinaryReader &br, Archive &archive) {
 	audio_.stopBGM(frames);
 }
 
-void Script::commandA0_umi(BinaryReader &br, Archive &archive) {
+void Script::play_se(BinaryReader &br, Archive &archive) {
 	auto channel = br.read<uint16_t>();
 	auto seId = br.read<uint16_t>();
 	auto unk = br.read<uint16_t>();
@@ -237,7 +237,7 @@ void Script::commandA0_umi(BinaryReader &br, Archive &archive) {
 	audio_.playSE(channel, "se/" + std::string(ses_[seId].name) + ".at3", volume / 255.0f);
 }
 
-void Script::commandA1(BinaryReader &br, Archive &archive) {
+void Script::stop_se(BinaryReader &br, Archive &archive) {
 	auto channel = getVariable(br.read<uint16_t>());
 	auto frames = getVariable(br.read<uint16_t>());
 
@@ -245,13 +245,13 @@ void Script::commandA1(BinaryReader &br, Archive &archive) {
 }
 
 // stop_all_se
-void Script::commandA2(BinaryReader &br, Archive &archive) {
+void Script::stop_all_se(BinaryReader &br, Archive &archive) {
 	auto frames = getVariable(br.read<uint16_t>());
 
 	audio_.stopAllSE(frames);
 }
 
-void Script::displayImage(BinaryReader &br, Archive &archive) {
+void Script::display_image(BinaryReader &br, Archive &archive) {
 	auto layer = br.read<uint16_t>(); // Layer?
 	auto type = (ImageType)br.read<uint16_t>();
 	auto unk3 = br.read<uint8_t>();
@@ -286,7 +286,7 @@ void Script::displayImage(BinaryReader &br, Archive &archive) {
 	}
 }
 
-void Script::commandC2(BinaryReader &br, Archive &archive) {
+void Script::set_layer_property(BinaryReader &br, Archive &archive) {
 	auto layer = getVariable(br.read<uint16_t>());
 	auto prop = br.read<uint16_t>();
 	auto unk3 = br.read<uint8_t>();

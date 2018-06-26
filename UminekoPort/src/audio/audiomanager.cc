@@ -84,6 +84,10 @@ void AudioManager::setBGMVolume(float volume) {
 	bgm_->setMasterVolume(volume);
 }
 
+void setSEVolume(int channel, float volume) {
+	// TODO: Implement
+}
+
 void AudioManager::playBGM(const std::string &filename, float volume) {
 	auto at3file = std::make_shared<AT3File>();
 	at3file->manager_ = this;

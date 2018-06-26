@@ -16,6 +16,7 @@ public:
 	void drawDebug();
 
 	void setBGMVolume(float volume);
+	void setSEVolume(int channel, float volume);
 
 	void playBGM(const std::string &filename, float volume);
 	void stopBGM(int frames);
