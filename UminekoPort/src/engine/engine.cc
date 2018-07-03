@@ -25,7 +25,7 @@ void Engine::run() {
 		arc.open("chiru_data/DATA.ROM");
 	else if (game == "higu") {
 		arc.open("higurashi_data/DATA.ROM");
-		arc.explore();
+		//arc.explore();
 	}
 
 	Window window;

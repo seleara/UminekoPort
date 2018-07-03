@@ -155,8 +155,12 @@
     <ClCompile Include="src\main.cc" />
     <ClCompile Include="src\math\clock.cc" />
     <ClCompile Include="src\math\time.cc" />
+    <ClCompile Include="src\script\chiruscript.cc" />
+    <ClCompile Include="src\script\higuscript.cc" />
     <ClCompile Include="src\script\script.cc" />
     <ClCompile Include="src\script\scriptdecompiler.cc" />
+    <ClCompile Include="src\script\scriptimpl.cc" />
+    <ClCompile Include="src\script\umiscript.cc" />
     <ClCompile Include="src\util\binaryreader.cc" />
     <ClCompile Include="src\util\string.cc" />
     <ClCompile Include="src\window\window.cc" />
@@ -186,8 +190,12 @@
     <ClInclude Include="src\math\clock.h" />
     <ClInclude Include="src\math\time.h" />
     <ClInclude Include="src\math\transform.h" />
+    <ClInclude Include="src\script\chiruscript.h" />
+    <ClInclude Include="src\script\higuscript.h" />
     <ClInclude Include="src\script\script.h" />
     <ClInclude Include="src\script\scriptdecompiler.h" />
+    <ClInclude Include="src\script\scriptimpl.h" />
+    <ClInclude Include="src\script\umiscript.h" />
     <ClInclude Include="src\stb\stb_image.h" />
     <ClInclude Include="src\stb\stb_image_write.h" />
     <ClInclude Include="src\util\binaryreader.h" />

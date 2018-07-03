@@ -40,7 +40,7 @@ void Archive::explore(ArchiveEntry &folder) {
 	std::cout << "\n: ";
 	std::string cmd;
 	std::getline(std::cin, cmd);
-	if (cmd.substr(0, 5) == "exit ") {
+	if (cmd == "exit") {
 		return;
 	} else if (cmd.substr(0, 3) == "cd ") {
 		auto dir = cmd.substr(3);

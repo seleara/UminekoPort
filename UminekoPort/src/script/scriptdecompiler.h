@@ -69,7 +69,8 @@ private:
 		return ((value >> 0xC) & 0xF) == 0x8;
 	}
 
-	static std::vector<std::string> functionNames_;
+	static std::vector<std::string> functionNamesUmi_;
+	static std::vector<std::string> functionNamesHigu_;
 	static std::vector<SDCommand> commands_;
 
 	typedef FuncInfo(ScriptDecompiler::*SDCommandFunc)(const SDCommand &, BinaryReader &) const;
