@@ -30,7 +30,7 @@ std::vector<uint8_t> DataCompression::decompress10_6(const uint8_t *compressedDa
 
 				// The back reference is a 16-bit value laid out like this, from most significant bit to least significant bit:
 				// AAAA AAAA BBCC CCCC
-				// The relative offset is then the 10-bit value "BBAAAAAA" + 3, and the number of byte to copy is the 6-bit value "CCCCCC"
+				// The relative offset is then the 10-bit value "BBAAAAAA" + 3, and the number of bytes to copy is the 6-bit value "CCCCCC"
 				//const auto backRefLow = *(readPtr++);
 				//auto backRef = ((*(readPtr++) << 8) & 0xff00) | (backRefLow & 0xff);
 				auto backRef = *(uint16_t *)readPtr;
@@ -76,7 +76,7 @@ std::vector<uint8_t> DataCompression::decompress12_4(const uint8_t *compressedDa
 
 				// The back reference is a 16-bit value laid out like this, from most significant bit to least significant bit:
 				// AAAA AAAA BBBB CCCC
-				// The relative offset is then the 12-bit value "BBBBAAAAAA" + 3, and the number of byte to copy is the 4-bit value "CCCC"
+				// The relative offset is then the 12-bit value "BBBBAAAAAA" + 3, and the number of bytes to copy is the 4-bit value "CCCC"
 				//const auto backRefLow = *(readPtr++);
 				//auto backRef = ((*(readPtr++) << 8) & 0xff00) | (backRefLow & 0xff);
 				auto backRef = *(uint16_t *)readPtr;

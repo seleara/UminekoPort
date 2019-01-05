@@ -25,7 +25,7 @@ void Engine::run() {
 		arc.open("chiru_data/DATA.ROM");
 	else if (game == "higu") {
 		arc.open("higurashi_data/DATA.ROM");
-		//arc.explore();
+		arc.explore();
 	}
 
 	Window window;
@@ -42,15 +42,13 @@ void Engine::run() {
 	preloadShader.load("shaders/text.glsl");
 	preloadShader.saveCache("text");
 
-	UniformBuffer::createUniformBuffer<Matrices>("mvp2d", 1);
-	UniformBuffer::bindUniformBuffer("mvp2d");
-	auto mvp2d = UniformBuffer::uniformBuffer<Matrices>("mvp2d");
+	auto mvp2d = UniformBuffer::createUniformBuffer<Matrices>("mvp2d", 1);
+	mvp2d.bind();
 	mvp2d->projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f);
 	mvp2d.update();
 
-	UniformBuffer::createUniformBuffer<ShaderTextData>("text", 3);
-	UniformBuffer::bindUniformBuffer("text");
-	auto text = UniformBuffer::uniformBuffer<ShaderTextData>("text");
+	auto text = UniformBuffer::createUniformBuffer<ShaderTextData>("text", 3);
+	text.bind();
 	text->progress.x = 0.0f;
 	text.update();
 

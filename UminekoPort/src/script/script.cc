@@ -60,7 +60,7 @@ void Script::load(const std::string &path, Archive &archive) {
 
 	sd_.setup();
 	//sd_.decompile(path, data, scriptOffset);
-	decompile();
+	//decompile();
 
 	br.seekg(scriptOffset_);
 	while (!stopped_) {

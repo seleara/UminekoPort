@@ -38,10 +38,10 @@ std::vector<std::string> ScriptDecompiler::functionNamesHigu_ = {
 	"command_50", "command_51", "command_52", "command_53", "command_54", "command_55", "command_56", "command_57", "command_58", "command_59", "command_5A", "command_5B", "command_5C", "command_5D", "command_5E", "command_5F",
 	"command_60", "command_61", "command_62", "command_63", "command_64", "command_65", "command_66", "command_67", "command_68", "command_69", "command_6A", "command_6B", "command_6C", "command_6D", "command_6E", "command_6F",
 	"command_70", "command_71", "command_72", "command_73", "command_74", "command_75", "command_76", "command_77", "command_78", "command_79", "command_7A", "command_7B", "command_7C", "command_7D", "command_7E", "command_7F",
-	"unlock_content", "command_81", "command_82", "wait", "command_84", "command_85", "display_text", "command_87", "return_to_message", "hide_text", "command_8A", "command_8B", "command_8C", "show_choices", "command_8E", "command_8F",
+	"unlock_content", "command_81", "command_82", "wait", "command_84", "command_85", "display_text", "command_87", "return_to_message", "hide_text", "command_8A", "command_8B", "command_8C", "show_choices", "do_transition", "command_8F",
 	"play_se", "stop_se", "stop_all_se", "set_se_volume", "command_94", "command_95", "command_96", "command_97", "command_98", "command_99", "command_9A", "command_9B", "play_bgm", "stop_bgm", "command_9E", "command_9F",
-	"set_title", "command_A1", "command_A2", "command_A3", "command_A4", "command_A5", "shake", "command_A7", "command_A8", "command_A9", "command_AA", "command_AB", "command_AC", "command_AD", "command_AE", "command_AF",
-	"command_B0", "play_movie", "movie_related_B2", "movie_related_B3", "movie_related_B4", "command_B5", "autosave", "command_B7", "command_B8", "command_B9", "command_BA", "command_BB", "command_BC", "command_BD", "unlock_trophy", "command_BF",
+	"set_title", "play_movie", "movie_related_A2", "movie_related_A3", "command_A4", "command_A5", "play_voice_maybe", "command_A7", "command_A8", "command_A9", "command_AA", "command_AB", "command_AC", "command_AD", "command_AE", "command_AF",
+	"command_B0", "command_B1", "command_B2", "command_B3", "command_B4", "command_B5", "autosave", "command_B7", "command_B8", "command_B9", "command_BA", "command_BB", "command_BC", "command_BD", "unlock_trophy", "command_BF",
 	"command_C0", "display_image", "set_layer_property", "command_C3", "command_C4", "command_C5", "command_C6", "command_C7", "command_C8", "command_C9", "command_CA", "command_CB", "command_CC", "command_CD", "command_CE", "command_CF",
 	"command_D0", "command_D1", "command_D2", "command_D3", "command_D4", "command_D5", "command_D6", "command_D7", "command_D8", "command_D9", "command_DA", "command_DB", "command_DC", "command_DD", "command_DE", "command_DF",
 	"command_E0", "command_E1", "command_E2", "command_E3", "command_E4", "command_E5", "command_E6", "command_E7", "command_E8", "command_E9", "command_EA", "command_EB", "command_EC", "command_ED", "command_EE", "command_EF",
@@ -82,11 +82,12 @@ void ScriptDecompiler::setup() {
 	commands_[0x85] = { 0x85, { arg(SDType::Bytes, 4) } };
 	commands_[0x86] = { 0x86, { arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::String16) } };
 	if (script_.version() == 0x01)
-		commands_[0x87] = { 0x87, { arg(SDType::Int16), arg(SDType::Int16) } };
+		commands_[0x87] = { 0x87, { arg(SDType::Int16) } };
 	else
-		commands_[0x87] = { 0x87, { arg(SDType::Int16), arg(SDType::Int16), arg(SDType::Int16) } };
+		commands_[0x87] = { 0x87, { arg(SDType::Int16) } };
 	commands_[0x88] = { 0x88, {} };
 	commands_[0x89] = { 0x89, {} };
+	commands_[0x8A] = { 0x8A, { arg(SDType::Bytes, 4) } };
 	commands_[0x8B] = { 0x8B, { arg(SDType::String16) } };
 	commands_[0x8C] = { 0x8C, { arg(SDType::Bytes, 4), arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::String8), arg(SDType::SplitString8) } };
 	if (script_.version() == 0x01)
@@ -96,7 +97,7 @@ void ScriptDecompiler::setup() {
 	if (script_.version() == 0x01)
 		commands_[0x8E] = { 0x8E, {} };
 	else
-		commands_[0x8E] = { 0x8E, { arg(SDType::Bytes, 1) } };
+		commands_[0x8E] = { 0x8E, {} }; // special case?
 	commands_[0x91] = { 0x91, { arg(SDType::Bytes, 2) } };
 	commands_[0x95] = { 0x95, { arg(SDType::Bytes, 2), arg(SDType::Bytes, 2), arg(SDType::Bytes, 2), arg(SDType::Bytes, 4) } };
 	commands_[0x96] = { 0x96, { arg(SDType::Bytes, 2), arg(SDType::Bytes, 2) } };
@@ -110,20 +111,38 @@ void ScriptDecompiler::setup() {
 		commands_[0xA2] = { 0xA2, { arg(SDType::UInt16) } }; // frames
 		commands_[0xA3] = { 0xA3, { arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::Bytes, 2) } };
 	} else {
+		commands_[0xA0] = { 0xA0, { arg(SDType::UInt16), arg(SDType::String8) } }; // special case?
 		commands_[0x90] = { 0x90, { arg(SDType::UInt16), arg(SDType::UInt16), arg(SDType::UInt32) } }; // special case?
 		commands_[0x92] = { 0x92, { arg(SDType::UInt16), arg(SDType::UInt16) } }; // channel, frames
 		commands_[0x91] = { 0x91, { arg(SDType::UInt16) } }; // frames
 		commands_[0x93] = { 0x93, { arg(SDType::UInt16), arg(SDType::Bytes, 2), arg(SDType::Bytes, 2) } };
 	}
 	commands_[0xA4] = { 0xA4, { arg(SDType::Bytes, 4) } };
-	commands_[0xA6] = { 0xA6, { arg(SDType::Bytes, 4) } };
-	commands_[0xAE] = { 0xAE, { arg(SDType::Bytes, 2) } };
+	commands_[0xA5] = { 0xA5, {} };
+	if (script_.version() == 0x01)
+		commands_[0xA6] = { 0xA6, { arg(SDType::Bytes, 4) } };
+	else
+		commands_[0xA6] = { 0xA6, { arg(SDType::String8), arg(SDType::UInt16), arg(SDType::UInt16) } };
+	commands_[0xAD] = { 0xAD, { arg(SDType::Bytes, 2) } };
+	commands_[0xAE] = { 0xAE, { arg(SDType::Bytes, 2), arg(SDType::Bytes, 2) } };
 	commands_[0xAF] = { 0xAF, { arg(SDType::Bytes, 1), arg(SDType::UInt16), arg(SDType::Bytes, 2) } };
-	commands_[0xB0] = { 0xB0, { arg(SDType::UInt16), arg(SDType::String8) } }; // special case
-	commands_[0xB1] = { 0xB1, { arg(SDType::UInt16) } };
-	commands_[0xB2] = { 0xB2, { arg(SDType::UInt16) } };
-	commands_[0xB3] = { 0xB3, {} };
-	commands_[0xB4] = { 0xB4, {} };
+	if (script_.version() == 0x01)
+		commands_[0xB0] = { 0xB0, { arg(SDType::UInt16), arg(SDType::String8) } }; // special case
+	else
+		commands_[0xB0] = { 0xB0, { arg(SDType::UInt16) } };
+	if (script_.version() == 0x01) {
+		commands_[0xB1] = { 0xB1, { arg(SDType::UInt16) } };
+		commands_[0xB2] = { 0xB2, { arg(SDType::UInt16) } };
+		commands_[0xB3] = { 0xB3, {} };
+	} else {
+		commands_[0xA1] = { 0xA1, { arg(SDType::UInt16) } };
+		commands_[0xA2] = { 0xA2, { arg(SDType::UInt16) } };
+		commands_[0xA3] = { 0xA3, {} };
+	}
+	if (script_.version() == 0x01)
+		commands_[0xB4] = { 0xB4, {} };
+	else
+		commands_[0xB4] = { 0xB4, { arg(SDType::Bytes, 2) } };
 	commands_[0xB6] = { 0xB6, {} };
 	commands_[0xB9] = { 0xB9, {} }; // special case
 	commands_[0xBA] = { 0xB9, { arg(SDType::Bytes, 2) } };
@@ -159,11 +178,14 @@ void ScriptDecompiler::setup() {
 	specialCases_[0x83] = &ScriptDecompiler::command_83;
 	if (script_.version() == 0x01)
 		specialCases_[0x8D] = &ScriptDecompiler::command_8D;
-	//else
-	//	specialCases_[0x8D] = &ScriptDecompiler::command_8D_higu;
+	else
+		specialCases_[0x8E] = &ScriptDecompiler::command_8D;
 	specialCases_[0x9C] = &ScriptDecompiler::command_9C;
 	specialCases_[0xA0] = &ScriptDecompiler::command_A0;
-	specialCases_[0xB0] = &ScriptDecompiler::command_B0;
+	if (script_.version() == 0x01)
+		specialCases_[0xB0] = &ScriptDecompiler::command_B0;
+	else
+		specialCases_[0xA0] = &ScriptDecompiler::command_B0;
 	specialCases_[0xB9] = &ScriptDecompiler::command_B9;
 	specialCases_[0xBD] = &ScriptDecompiler::command_BD;
 	specialCases_[0xC1] = &ScriptDecompiler::display_image;
@@ -181,9 +203,38 @@ void ScriptDecompiler::decompile(const std::string &path, const std::vector<unsi
 
 	std::set<uint32_t> jumps;
 	std::map<uint32_t, std::string> lines;
+
+	std::cout << "Decompiling script...\n";
+	int iterations = 0;
+
+	auto updateProgress = [](uint32_t offset, uint32_t size, int fillWidth, int type) {
+		std::cout << "\rProgress [";
+		int segments = (offset / static_cast<float>(size)) * 40;
+		for (int i = 0; i < segments; ++i) {
+			std::cout << '=';
+		}
+		for (int i = 0; i < 40 - segments; ++i) {
+			std::cout << ' ';
+		}
+		switch (type) {
+		case 0:
+		default:
+			std::cout << "] " << std::setw(fillWidth) << std::setfill('0') << std::hex << offset << " / " << std::setw(fillWidth) << std::setfill('0') << std::hex << size;
+			break;
+		case 1:
+			std::cout << "] " << std::setw(fillWidth) << std::setfill(' ') << std::dec << offset << " / " << std::setw(fillWidth) << std::setfill(' ') << std::dec << size;
+			break;
+		}
+	};
 	
 	while (br.tellg() < static_cast<int>(data.size())) {
 		uint32_t offset = static_cast<uint32_t>(br.tellg());
+
+		++iterations;
+		if (iterations >= 1000) {
+			updateProgress(offset, data.size(), 6, 0);
+			iterations = 0;
+		}
 		auto opcode = br.read<uint8_t>();
 		const auto &cmd = commands_[opcode];
 		FuncInfo funcInfo;
@@ -212,13 +263,22 @@ void ScriptDecompiler::decompile(const std::string &path, const std::vector<unsi
 		}
 	}
 
+	updateProgress(data.size(), data.size(), 6, 0);
+
+	std::cout << "\nWriting output...\n";
+	int lineIndex = 0;
 	for (const auto &line : lines) {
 		auto jump = jumps.find(line.first);
 		if (jump != jumps.cend()) {
 			ofs << std::hex << std::setw(8) << std::setfill('0') << *jump << std::dec << ":\n";
 		}
 		ofs << "  " << line.second << '\n';
+
+		++lineIndex;
+		if (lineIndex % 1000 == 0)
+			updateProgress(lineIndex, lines.size(), 8, 1);
 	}
+	updateProgress(lines.size(), lines.size(), 8, 1);
 	ofs.close();
 }
 
@@ -477,7 +537,10 @@ FuncInfo ScriptDecompiler::command_4A(const SDCommand &cmd, BinaryReader &br) co
 	auto count = br.read<uint16_t>();
 	ss << count;
 	for (int i = 0; i < count; ++i) {
+		auto offset = br.read<uint32_t>();
+		br.skip(-4);
 		ss << ", " << parseArgument(arg(SDType::JumpAddr), br);
+		fi.jumps.push_back(offset);
 	}
 	ss << ")";
 	fi.line = ss.str();
@@ -571,7 +634,7 @@ FuncInfo ScriptDecompiler::command_8D(const SDCommand &cmd, BinaryReader &br) co
 	FuncInfo fi;
 	std::stringstream ss;
 	uint8_t unknown = 0, unknown2 = 0;
-	if (Engine::game == "chiru") {
+	if (Engine::game == "chiru" || Engine::game == "higu") {
 		unknown = br.read<uint8_t>();
 		if (unknown != 0)
 			unknown2 = br.read<uint8_t>();
@@ -750,10 +813,10 @@ FuncInfo ScriptDecompiler::display_image(const SDCommand &cmd, BinaryReader &br)
 	uint16_t spriteId = 0;
 
 	if (script_.version() == 0x01 && unk3 == 0) { // clear layer
-		if (type == 0) {
+		/*if (type == 0) {
 			spriteId = br.read<uint16_t>();
 			ss << ", " << spriteId;
-		}
+		}*/
 		ss << ") // clear?";
 		fi.line = ss.str();
 		return fi;

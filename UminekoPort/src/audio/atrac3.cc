@@ -27,6 +27,7 @@ AT3File::~AT3File() {
 }
 
 void AT3File::load(const std::string &filename, Archive &archive) {
+	filename_ = filename;
 	data_ = archive.read(filename);
 
 	avData_ = (unsigned char *)av_malloc(data_.size());

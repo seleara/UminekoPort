@@ -43,8 +43,11 @@ struct SEEntry {
 };
 
 enum class ImageType {
+	None = 0,
+	Type1 = 1,
 	Picture = 2,
-	Sprite = 3
+	Sprite = 3,
+	Anim = 4
 };
 
 class AudioManager;

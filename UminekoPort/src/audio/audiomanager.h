@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 
+#include "../util/log.h"
+
 struct SoundIo;
 struct SoundIoDevice;
 
@@ -29,6 +31,8 @@ public:
 private:
 	friend class AT3File;
 	friend class AudioStream;
+
+	Log &log_;
 
 	Archive &archive_;
 

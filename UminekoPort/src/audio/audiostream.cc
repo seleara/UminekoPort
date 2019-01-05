@@ -1,6 +1,7 @@
 #include "audiostream.h"
 
 #include <iostream>
+#include <thread>
 
 #include <soundio/soundio.h>
 
@@ -15,6 +16,10 @@ AudioStream::~AudioStream() {
 }
 
 void AudioStream::load(std::shared_ptr<AT3File> at3) {
+	while (inCallback_.load()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	loadingStream_ = true;
 	int err;
 	if (!outStream) {
 		outStream = soundio_outstream_create(manager_->device_);
@@ -31,11 +36,13 @@ void AudioStream::load(std::shared_ptr<AT3File> at3) {
 
 		if ((err = soundio_outstream_open(outStream))) {
 			std::cerr << "Unable to open device: " << soundio_strerror(err) << std::endl;
+			loadingStream_ = false;
 			return;
 		}
 
 		if (outStream->layout_error) {
 			std::cerr << "Unable to set channel layout: " << soundio_strerror(outStream->layout_error) << std::endl;
+			loadingStream_ = false;
 			return;
 		}
 
@@ -54,6 +61,8 @@ void AudioStream::load(std::shared_ptr<AT3File> at3) {
 	delete[] buffer_;*/
 	//buffer_.resize(outStream->layout.channel_count);
 	buffer_.resize(at3->channels() * 4096);
+
+	loadingStream_ = false;
 }
 
 void AudioStream::play() {
@@ -148,9 +157,13 @@ void AudioStream::writeCallback(SoundIoOutStream *outStream, int frameCountMin, 
 }
 
 void AudioStream::writeCallback_(SoundIoOutStream *outStream, int frameCountMin, int frameCountMax) {
+	while (loadingStream_.load()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
 	if (fadeDir_ == FadeDirection::None && fadeCoeff_ == 0) {
 		return;
 	}
+	inCallback_ = true;
 	SoundIoChannelLayout *layout = &outStream->layout;
 	float sampleRate = static_cast<float>(outStream->sample_rate);
 	float secondsPerFrame = 1.0f / sampleRate;
@@ -191,6 +204,7 @@ void AudioStream::writeCallback_(SoundIoOutStream *outStream, int frameCountMin,
 
 		if ((err = soundio_outstream_begin_write(outStream, &areas, &frameCount))) {
 			std::cerr << "SoundIO Error: " << soundio_strerror(err) << std::endl;
+			inCallback_ = false;
 			return;
 		}
 
@@ -232,6 +246,7 @@ void AudioStream::writeCallback_(SoundIoOutStream *outStream, int frameCountMin,
 
 		if ((err = soundio_outstream_end_write(outStream))) {
 			std::cerr << "SoundIO Error: " << soundio_strerror(err) << std::endl;
+			inCallback_ = false;
 			return;
 		}
 
@@ -243,6 +258,8 @@ void AudioStream::writeCallback_(SoundIoOutStream *outStream, int frameCountMin,
 
 		framesLeft -= frameCount;
 	}
+
+	inCallback_ = false;
 
 	//if (done) {
 	//	stream->callback();

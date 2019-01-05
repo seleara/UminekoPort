@@ -162,6 +162,7 @@
     <ClCompile Include="src\script\scriptimpl.cc" />
     <ClCompile Include="src\script\umiscript.cc" />
     <ClCompile Include="src\util\binaryreader.cc" />
+    <ClCompile Include="src\util\log.cc" />
     <ClCompile Include="src\util\string.cc" />
     <ClCompile Include="src\window\window.cc" />
   </ItemGroup>
@@ -199,6 +200,7 @@
     <ClInclude Include="src\stb\stb_image.h" />
     <ClInclude Include="src\stb\stb_image_write.h" />
     <ClInclude Include="src\util\binaryreader.h" />
+    <ClInclude Include="src\util\log.h" />
     <ClInclude Include="src\util\endian.h" />
     <ClInclude Include="src\util\string.h" />
     <ClInclude Include="src\window\input.h" />

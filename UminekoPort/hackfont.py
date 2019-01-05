@@ -2,14 +2,42 @@ import sys
 import struct
 
 def main():
-	with open("default.fnt", "rb") as f:
+	if len(sys.argv) < 2 or (sys.argv[1] != "higu" and sys.argv[1] != "chiru" and sys.argv[1] != "umi"):
+		print("Must specify higu or umi or chiru")
+		return
+	game = ""
+	if sys.argv[1] == "higu":
+		game = "higurashi"
+	elif sys.argv[1] == "chiru":
+		game = "chiru"
+	elif sys.argv[1] == "umi":
+		game = ""
+	fontname = game == "higurashi" and "gothic" or "default"
+
+	if len(sys.argv) == 3 and sys.argv[2] == "restore":
+		with open(fontname + ".fnt", "rb") as f:
+			newdata = list(f.read())
+			with open(fontname + "_new.fnt", "wb") as nf:
+				nf.write(bytearray(newdata))
+			with open(game + "_data/DATA.ROM", "r+b") as rom:
+				if game == "higurashi":
+					rom.seek(0x453000)
+				elif game == "chiru":
+					rom.seek(0x138800)
+				elif game == "":
+					rom.seek(0x149000)
+				rom.write(bytearray(newdata))
+				return
+
+	with open(fontname + ".fnt", "rb") as f:
 		newdata = list(f.read())
+		olddata = list(newdata)
 		fileSize = struct.unpack('i', ''.join(newdata[4:8]))[0]
 		startoff = 16
 
 		def getOffset(index):
 			off = startoff + index * 4
-			offset = struct.unpack('i', ''.join(newdata[off:off+4]))[0]
+			offset = struct.unpack('i', ''.join(olddata[off:off+4]))[0]
 			return offset
 
 		def update(index, attr, val):
@@ -22,11 +50,20 @@ def main():
 
 		def replace(src, dst):
 			srcOffset = getOffset(src)
-			srcBytes = 8 + ((ord(newdata[srcOffset + 6]) & 0xff) | ((ord(newdata[srcOffset + 7]) << 8) & 0xff00))
-			srcData = newdata[srcOffset:srcOffset + srcBytes]
+			srcBytes = 8 + ((ord(olddata[srcOffset + 6]) & 0xff) | ((ord(olddata[srcOffset + 7]) << 8) & 0xff00))
+			srcData = olddata[srcOffset:srcOffset + srcBytes]
 			dstOffset = getOffset(dst)
+			if dstOffset >= fileSize:
+				print("Offset is outside of file.")
+				raw_input()
 			newdata[dstOffset:dstOffset + srcBytes] = srcData
+			#print("Replacing glyph {}[{:08X}] with {}[{:08X}]. Validity = {}".format(dst, dstOffset, src, srcOffset, ''.join("{:02X} ".format(ord(newdata[getOffset(0)+i])) for i in range(10))))
+			#raw_input()
 
+		#newdata[getOffset(0):len(newdata) - getOffset(0)] = [0 for i in range(len(newdata) - getOffset(0))]
+		for i in range(3000):
+			replace(0, i + 1)
+		#replace(1, 443)
 		#replace(133, 98)
 		#replace(0x81fb - 0x8140 + 96, 98)
 		#replace(299, 98)
@@ -49,11 +86,16 @@ def main():
 		#for i in range(8180):
 		#	update(i, 7, i % 255)
 
-		with open("newfont.fnt", "wb") as nf:
+		with open(fontname + "_new.fnt", "wb") as nf:
 			nf.write(bytearray(newdata))
 
-		with open("data/DATA.ROM", "r+b") as rom:
-			rom.seek(0x149000)
+		with open(game + "_data/DATA.ROM", "r+b") as rom:
+			if game == "higurashi":
+				rom.seek(0x453000)
+			elif game == "chiru":
+				rom.seek(0x138800)
+			elif game == "":
+				rom.seek(0x149000)
 			rom.write(bytearray(newdata))
 
 if __name__ == '__main__':

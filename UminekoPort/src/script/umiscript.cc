@@ -39,7 +39,7 @@ void UmiScript::readSprites(BinaryReader &br, uint32_t offset) {
 	br.seekg(offset);
 	auto spriteCount = br.read<uint32_t>();
 	sprites_.resize(spriteCount);
-	for (int i = 0; i < spriteCount; ++i) {
+	for (uint32_t i = 0; i < spriteCount; ++i) {
 		SpriteEntry &e = sprites_[i];
 		e.name = br.readString(0x18).c_str();
 		e.pose = br.readString(0x10).c_str();
@@ -50,7 +50,7 @@ void UmiScript::readAnims(BinaryReader &br, uint32_t offset) {
 	br.seekg(offset);
 	auto animCount = br.read<uint32_t>();
 	anims_.resize(animCount);
-	for (int i = 0; i < animCount; ++i) {
+	for (uint32_t i = 0; i < animCount; ++i) {
 		AnimEntry &e = anims_[i];
 		e.name = br.readString(0x24).c_str();
 		e.unknown = br.read<int16_t>();

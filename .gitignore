@@ -9,9 +9,11 @@
 /UminekoPort/umi_main.snr*
 /UminekoPort/chiru_main.snr*
 /UminekoPort/higu_main.snr*
-/UminekoPort/default.fnt
-/UminekoPort/newfont.fnt
 /UminekoPort/patch.snr
+/UminekoPort/*.snr
+/UminekoPort/*.fnt
+/UminekoPort/*.png
+/UminekoPort/*.at3
 
 imgui.ini
 

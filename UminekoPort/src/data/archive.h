@@ -35,7 +35,7 @@ struct Txa {
 	std::string name;
 	struct SubEntry {
 		std::string name;
-		uint32_t width, height;
+		uint32_t width, height, scanline;
 		std::vector<unsigned char> pixels;
 	};
 	std::vector<SubEntry> subentries;
@@ -70,13 +70,13 @@ public:
 	Msk getMsk(const std::string &path);
 	Png getPng(const std::string &path);
 	void extractMsk(const std::string &path);
-	void writeImage(const std::string &path, unsigned char *data, int width, int height, int scanline, int bpp=4);
+	void writeImage(const std::string &path, const unsigned char *data, int width, int height, int scanline, int bpp=4);
 private:
 	ArchiveEntry &get(const std::string &path);
 	void scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br);
 	void explore(ArchiveEntry &folder);
 
-	void decode(const unsigned char *buffer, size_t bufferSize, unsigned char *output);
+	uint32_t decode(const unsigned char *buffer, size_t bufferSize, unsigned char *output);
 	void dpcm(unsigned char *source, unsigned char *destination, int width, int height, int scanline);
 	void extractTxa(ArchiveEntry &txa);
 	void extractBup(ArchiveEntry &bup);

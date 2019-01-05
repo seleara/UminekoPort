@@ -9,7 +9,7 @@
 #include "audiostream.h"
 #include "atrac3.h"
 
-AudioManager::AudioManager(Archive &archive) : archive_(archive) {
+AudioManager::AudioManager(Archive &archive) : log_(Log::create("audio")), archive_(archive) {
 	bgm_ = std::make_unique<AudioStream>();
 	bgm_->manager_ = this;
 	voice_ = std::make_unique<AudioStream>();
@@ -21,6 +21,7 @@ AudioManager::AudioManager(Archive &archive) : archive_(archive) {
 	}
 
 	try {
+		//log_.print("Initializing SoundIO...");
 		soundio_ = soundio_create();
 		if (!soundio_) {
 			throw std::runtime_error("Unable to initialize SoundIO: Out of memory");
@@ -29,6 +30,7 @@ AudioManager::AudioManager(Archive &archive) : archive_(archive) {
 		if ((err = soundio_connect(soundio_))) {
 			throw std::runtime_error("Error connecting: " + std::string(soundio_strerror(err)) + '\n');
 		}
+		//log_.print("SoundIO successfully connected.");
 
 		std::cout << "Connected." << std::endl;
 
@@ -43,6 +45,8 @@ AudioManager::AudioManager(Archive &archive) : archive_(archive) {
 		if (!device_) {
 			throw std::runtime_error("Out of memory.");
 		}
+
+		//log_.print("SoundIO device acquired: ", device_->name);
 
 		std::cout << "Output device: " << device_->name << std::endl;
 	}
@@ -76,6 +80,16 @@ void AudioManager::drawDebug() {
 	if (masterVol != origVol) {
 		bgm_->setMasterVolume(masterVol);
 	}
+
+	ImGui::Text("BGM: %s", (bgm_->at3_ ? bgm_->at3_->filename_.c_str() : "---"));
+	ImGui::Text("Voice: %s", (voice_->at3_ ? voice_->at3_->filename_.c_str() : "---"));
+
+	ImGui::BeginGroup();
+	ImGui::Text("Log");
+	ImGui::Text("%d", log_.buffer());
+	ImGui::Text("%d", log_.count());
+	ImGui::InputTextMultiline("audiolog", log_.buffer(), log_.count());
+	ImGui::EndGroup();
 
 	ImGui::End();
 }

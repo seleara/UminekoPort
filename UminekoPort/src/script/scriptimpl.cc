@@ -11,7 +11,7 @@ void ScriptImpl::readMasks(BinaryReader &br, uint32_t offset) {
 	br.seekg(offset);
 	auto maskCount = br.read<uint32_t>();
 	masks_.resize(maskCount);
-	for (int i = 0; i < maskCount; ++i) {
+	for (uint32_t i = 0; i < maskCount; ++i) {
 		auto &mask = masks_[i];
 		mask.name = br.readString(0xc).c_str();
 	}
@@ -21,7 +21,7 @@ void ScriptImpl::readCgs(BinaryReader &br, uint32_t offset) {
 	br.seekg(offset);
 	auto cgCount = br.read<uint32_t>();
 	cgs_.resize(cgCount);
-	for (int i = 0; i < cgCount; ++i) {
+	for (uint32_t i = 0; i < cgCount; ++i) {
 		auto &cg = cgs_[i];
 		cg.name = br.readString(0x18).c_str();
 		cg.unknown = br.read<int16_t>();
@@ -32,7 +32,7 @@ void ScriptImpl::readBgms(BinaryReader &br, uint32_t offset) {
 	br.seekg(offset);
 	auto bgmCount = br.read<uint32_t>();
 	bgms_.resize(bgmCount);
-	for (int i = 0; i < bgmCount; ++i) {
+	for (uint32_t i = 0; i < bgmCount; ++i) {
 		auto &bgm = bgms_[i];
 		bgm.name = br.readString(0xc).c_str();
 		bgm.title = br.readString(0x28).c_str();
@@ -43,7 +43,7 @@ void ScriptImpl::readSes(BinaryReader &br, uint32_t offset) {
 	br.seekg(offset);
 	auto seCount = br.read<uint32_t>();
 	ses_.resize(seCount);
-	for (int i = 0; i < seCount; ++i) {
+	for (uint32_t i = 0; i < seCount; ++i) {
 		auto &se = ses_[i];
 		se.name = br.readString(0x18).c_str();
 	}

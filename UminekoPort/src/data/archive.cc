@@ -23,8 +23,6 @@ void Archive::open(const std::string &path) {
 
 void Archive::explore() {
 	explore(root_);
-
-	std::cin.get();
 }
 
 void Archive::explore(ArchiveEntry &folder) {
@@ -51,12 +49,18 @@ void Archive::explore(ArchiveEntry &folder) {
 		if (iter != folder.childrenNames.end()) {
 			explore(folder.children[iter->second]);
 		}
-	} else if (cmd == "ls") {
+	} else if (cmd == "ls" || cmd.substr(0, 3) == "ls ") {
+		bool extraInfo = cmd.size() > 2 && cmd.substr(3, 1) == "a";
 		for (auto &child : folder.children) {
 			if (child.isFolder) {
 				std::cout << child.name << "/\n";
 			} else {
-				std::cout << child.name << "\n";
+				if (extraInfo) {
+					std::cout << std::left << std::setw(20) << std::setfill(' ') << child.name << std::hex << std::right << std::setw(8) << std::setfill('0') << child.offset << std::dec;
+				} else {
+					std::cout << child.name;
+				}
+				std::cout << "\n";
 			}
 		}
 	} else if (cmd.substr(0, 7) == "export " || cmd.substr(0, 10) == "exportraw ") {
@@ -77,7 +81,7 @@ void Archive::explore(ArchiveEntry &folder) {
 				} else if (ext == ".msk") {
 					extractMsk(child.path);
 				} else {
-					std::ofstream ofs(child.name, std::ios_base::binary);
+					std::ofstream ofs("export/" + child.name, std::ios_base::binary);
 					BinaryReader br(ifs_);
 					br.seekg(child.offset);
 					char *data = new char[child.size];
@@ -130,7 +134,7 @@ ArchiveEntry &Archive::get(const std::string &path) {
 	return *current;
 }
 
-void Archive::decode(const unsigned char *buffer, size_t bufferSize, unsigned char *output) {
+uint32_t Archive::decode(const unsigned char *buffer, size_t bufferSize, unsigned char *output) {
 	/*int p = 0;
 	int marker = 1;
 	char *res = output;
@@ -198,6 +202,8 @@ void Archive::decode(const unsigned char *buffer, size_t bufferSize, unsigned ch
 
 		marker >>= 1;
 	}
+
+	return res - output;
 }
 
 void Archive::dpcm(unsigned char *source, unsigned char *destination, int width, int height, int scanline) {
@@ -226,7 +232,7 @@ struct BMPHeader {
 };
 #pragma pack(pop)
 
-void Archive::writeImage(const std::string &path, unsigned char *data, int width, int height, int scanline, int bpp) {
+void Archive::writeImage(const std::string &path, const unsigned char *data, int width, int height, int scanline, int bpp) {
 	/*std::ofstream ofs(path, std::ios_base::binary);
 	BMPHeader header;
 
@@ -286,6 +292,15 @@ struct TxaHeader {
 	uint32_t unknown, unknown2;
 };
 
+struct Txa4Header {
+	uint32_t magic;
+	uint32_t filesize;
+	uint32_t unknown;
+	uint32_t chunks;
+	uint32_t decodedSize;
+	uint32_t padding, padding2, padding3;
+};
+
 struct TxaChunk {
 	uint16_t length;
 	uint16_t index;
@@ -294,12 +309,28 @@ struct TxaChunk {
 	uint16_t scanline;
 	uint16_t unknown;
 	uint32_t offset;
+};
 
-	//char name[0];
+struct Txa4Chunk {
+	uint16_t length;
+	uint16_t index;
+	uint16_t width;
+	uint16_t height;
+	uint32_t offset;
+	uint32_t encodedSize;
 };
 
 void Archive::extractTxa(ArchiveEntry &txa) {
-	BinaryReader br(ifs_);
+	auto img = getTxa(txa.path);
+	std::stringstream pngName;
+	for (const auto &se : img.subentries) {
+		pngName << img.name << "_" << se.name << ".png";
+		std::cout << "PNG: " << pngName.str() << "\n";
+		writeImage(pngName.str(), se.pixels.data(), se.width, se.height, se.scanline);
+		pngName.clear();
+		pngName.str("");
+	}
+	/*BinaryReader br(ifs_);
 	br.seekg(txa.offset);
 	auto header = br.read<TxaHeader>();
 	std::cout << "Magic = " << std::hex << header.magic << std::dec << "\n";
@@ -334,7 +365,7 @@ void Archive::extractTxa(ArchiveEntry &txa) {
 	}
 
 	delete[] data;
-	delete[] buffer;
+	delete[] buffer;*/
 }
 
 struct BupHeader {
@@ -379,6 +410,17 @@ struct PicHeader {
 	uint32_t chunks;
 };
 
+struct Pic4Header {
+	uint32_t magic;
+	uint32_t fileSize;
+	uint16_t eWidth;
+	uint16_t eHeight;
+	uint16_t width;
+	uint16_t height;
+	uint32_t unknown;
+	uint32_t chunks;
+};
+
 struct PicChunk {
 	uint32_t version;
 	uint16_t left;
@@ -387,6 +429,21 @@ struct PicChunk {
 	uint16_t height;
 	uint32_t offset;
 	uint32_t size;
+};
+
+struct Pic4Entry {
+	uint16_t left;
+	uint16_t top;
+	uint32_t offset;
+};
+
+struct Pic4Chunk {
+	uint16_t unk, unk2, unk3, unk4;
+	uint32_t unk5;
+	uint16_t widthPlus2, heightPlus2;
+	uint32_t encodedSize, unk7;
+	uint16_t width, height;
+	uint32_t unk8;
 };
 
 struct MskHeader {
@@ -402,49 +459,101 @@ Txa Archive::getTxa(const std::string &path) {
 
 	std::lock_guard<std::mutex> lock(mutex_);
 
+	Txa txa;
+	std::vector<std::string> names;
+
 	BinaryReader br(ifs_);
 	br.seekg(entry.offset);
-	auto header = br.read<TxaHeader>();
-	std::cout << "Magic = " << std::hex << header.magic << std::dec << "\n";
-	//char *metadata = new char[header.offset - sizeof(header)];
-	std::vector<TxaChunk> chunks; // (header.chunks);
-	std::vector<std::string> names;
-	//br.read(metadata, header.offset - sizeof(header));
-
-	for (uint32_t i = 0; i < header.chunks; ++i) {
-		uint64_t chunkStart = br.tellg();
-		auto chunk = br.read<TxaChunk>();
-		auto name = br.readString();
-		br.seekg(chunkStart + chunk.length);
-		std::cout << "W = " << chunk.width << ", H = " << chunk.height << "\n";
-		chunks.push_back(chunk);
-		names.push_back(name);
+	auto magic = br.read<uint32_t>();
+	//if ((magic & 0xffffff) != 0x434950) {
+	if ((magic & 0xffffff) != 0x415854) {
+		throw std::runtime_error("Not a valid TXA file.");
 	}
+	br.skip(-4);
 
-	unsigned char *data = new unsigned char[header.decodedSize];
-	unsigned char *buffer = new unsigned char[header.encodedSize];
-	br.seekg(entry.offset + header.offset);
-	br.read((char *)buffer, header.encodedSize);
-	decode(buffer, header.encodedSize, data);
+	char magicVer = ((magic >> 24) & 0xff);
+	if (magicVer == '4') {
+		auto header = br.read<Txa4Header>();
+		std::cout << "Magic = " << std::hex << header.magic << std::dec << "\n";
 
-	Txa txa;
-	txa.name = entry.name;
-	txa.subentries.reserve(header.chunks);
-	for (uint32_t i = 0; i < header.chunks; ++i) {
-		//std::stringstream bmpName;
-		//bmpName << txa.name << "_" << names[i] << ".png";
-		//std::cout << "PNG: " << bmpName.str() << "\n";
-		//writeImage(bmpName.str(), data + chunks[i].offset, chunks[i].width, chunks[i].height, chunks[i].scanline);
-		auto &subEntry = txa.subentries.emplace_back();
-		subEntry.name = names[i];
-		subEntry.width = chunks[i].width;
-		subEntry.height = chunks[i].height;
-		subEntry.pixels.resize(subEntry.width * subEntry.height * 4);
-		memcpy(subEntry.pixels.data(), data + chunks[i].offset, subEntry.width * subEntry.height * 4);
+		std::vector<Txa4Chunk> chunks;
+		chunks.reserve(header.chunks);
+		for (uint32_t i = 0; i < header.chunks; ++i) {
+			uint64_t chunkStart = br.tellg();
+			auto chunk = br.read<Txa4Chunk>();
+			auto name = br.readString();
+			br.seekg(chunkStart + chunk.length);
+			std::cout << "W = " << chunk.width << ", H = " << chunk.height << "\n";
+			chunks.push_back(chunk);
+			names.push_back(name);
+		}
+
+		txa.name = entry.name;
+		txa.subentries.reserve(header.chunks);
+
+		uint32_t decodeOffset = 0;
+		for (uint32_t i = 0; i < header.chunks; ++i) {
+			const auto &chunk = chunks[i];
+			unsigned char *buffer = new unsigned char[chunk.encodedSize];
+			br.seekg(entry.offset + chunk.offset);
+			br.read((char *)buffer, chunk.encodedSize);
+
+			auto &subEntry = txa.subentries.emplace_back();
+			subEntry.name = names[i];
+			subEntry.width = chunks[i].width;
+			subEntry.height = chunks[i].height;
+			subEntry.scanline = chunks[i].width * 4;
+			subEntry.pixels.resize(subEntry.width * subEntry.height * 4);
+
+			decodeOffset += decode(buffer + decodeOffset, chunk.encodedSize, subEntry.pixels.data());
+
+			delete[] buffer;
+		}
+	} else if (magicVer == '3') {
+		auto header = br.read<TxaHeader>();
+		std::cout << "Magic = " << std::hex << header.magic << std::dec << "\n";
+		//char *metadata = new char[header.offset - sizeof(header)];
+		//br.read(metadata, header.offset - sizeof(header));
+
+		std::vector<TxaChunk> chunks;
+		chunks.reserve(header.chunks);
+		for (uint32_t i = 0; i < header.chunks; ++i) {
+			uint64_t chunkStart = br.tellg();
+			auto chunk = br.read<TxaChunk>();
+			auto name = br.readString();
+			br.seekg(chunkStart + chunk.length);
+			std::cout << "W = " << chunk.width << ", H = " << chunk.height << "\n";
+			chunks.push_back(chunk);
+			names.push_back(name);
+		}
+
+		unsigned char *data = new unsigned char[header.decodedSize];
+		unsigned char *buffer = new unsigned char[header.encodedSize];
+		br.seekg(entry.offset + header.offset);
+		br.read((char *)buffer, header.encodedSize);
+		decode(buffer, header.encodedSize, data);
+
+		txa.name = entry.name;
+		txa.subentries.reserve(header.chunks);
+		for (uint32_t i = 0; i < header.chunks; ++i) {
+			//std::stringstream bmpName;
+			//bmpName << txa.name << "_" << names[i] << ".png";
+			//std::cout << "PNG: " << bmpName.str() << "\n";
+			//writeImage(bmpName.str(), data + chunks[i].offset, chunks[i].width, chunks[i].height, chunks[i].scanline);
+			auto &subEntry = txa.subentries.emplace_back();
+			subEntry.name = names[i];
+			subEntry.width = chunks[i].width;
+			subEntry.height = chunks[i].height;
+			subEntry.scanline = chunks[i].scanline;
+			subEntry.pixels.resize(subEntry.width * subEntry.height * 4);
+			memcpy(subEntry.pixels.data(), data + chunks[i].offset, subEntry.width * subEntry.height * 4);
+		}
+
+		delete[] data;
+		delete[] buffer;
+	} else {
+		throw std::runtime_error("Unsupported TXA version.");
 	}
-
-	delete[] data;
-	delete[] buffer;
 
 	return txa;
 }
@@ -454,42 +563,84 @@ Pic Archive::getPic(const std::string &path) {
 
 	std::lock_guard<std::mutex> lock(mutex_);
 
+	Pic pic;
+	pic.name = path;
+
 	BinaryReader br(ifs_);
 	br.seekg(entry.offset);
 
-	auto header = br.read<PicHeader>();
+	auto magic = br.read<uint32_t>();
+	br.skip(-4);
 
-	std::vector<PicChunk> chunks(header.chunks);
-	br.read((char *)chunks.data(), header.chunks * sizeof(PicChunk));
+	if (((magic >> 24) & 0xff) == '4') {
+		auto header = br.read<Pic4Header>();
 
-	Pic pic;
-	pic.name = path;
-	pic.pixels.resize(4 * header.width * header.height);
-	pic.width = header.width;
-	pic.height = header.height;
+		std::vector<Pic4Entry> entries(header.chunks);
+		br.read((char *)entries.data(), header.chunks * sizeof(Pic4Entry));
 
-	for (uint32_t i = 0; i < header.chunks; ++i) {
-		PicChunk &chunk = chunks[i];
+		pic.pixels.resize(4 * header.width * header.height);
+		pic.width = header.width;
+		pic.height = header.height;
 
-		auto size = chunk.size;
-		unsigned char *buffer = new unsigned char[size];
-		auto chunkStride = 4 * ((chunk.width + 3) & 0xfffc);
-		unsigned char *result = new unsigned char[chunk.height * chunkStride];
+		std::vector<Pic4Chunk> chunks;
+		chunks.reserve(header.chunks);
+		for (uint32_t i = 0; i < header.chunks; ++i) {
+			const auto &e = entries[i];
 
-		br.seekg(entry.offset + chunk.offset);
-		br.read((char *)buffer, size);
+			br.seekg(entry.offset + e.offset);
 
-		decode(buffer, size, result);
-		dpcm(result, result, chunk.width, chunk.height, chunkStride);
-		for (int y = 0; y < chunk.height; ++y) {
-			/*for (int x = 0; x < chunk.width * 4; ++x) {
-				pic.pixels[chunk.left * 4 + x + (chunk.top + y) * header.width * 4] = result[x + y * chunkStride];
-			}*/
-			memcpy(&pic.pixels[chunk.left * 4 + (chunk.top + y) * header.width * 4], result + y * chunkStride, chunkStride);
+			chunks.push_back(br.read<Pic4Chunk>());
+			auto &chunk = chunks.back();
+			//unsigned char *data = new unsigned char[chunk.encodedSize];
+			unsigned char *data = new unsigned char[chunk.height * chunk.width * 4];
+
+			//unsigned char *result = new unsigned char[chunk.height * chunk.widthPlus2];
+			br.read((char *)data, chunk.encodedSize);
+			//decode(data, chunk.encodedSize, result);
+			//dpcm(result, result, chunk.width, chunk.height, chunk.widthPlus2);
+			dpcm(data, data, chunk.width, chunk.height, chunk.width * 4);
+
+			for (int y = 0; y < chunk.height; ++y) {
+				std::copy(data + y * chunk.width * 4, data + (y + 1) * chunk.width * 4, pic.pixels.data() + e.left * 4 + (e.top + y) * header.width * 4);
+			}
+
+			delete[] data;
 		}
-		delete[] buffer;
-		delete[] result;
+
+	} else {
+		auto header = br.read<PicHeader>();
+
+		std::vector<PicChunk> chunks(header.chunks);
+		br.read((char *)chunks.data(), header.chunks * sizeof(PicChunk));
+
+		pic.pixels.resize(4 * header.width * header.height);
+		pic.width = header.width;
+		pic.height = header.height;
+
+		for (uint32_t i = 0; i < header.chunks; ++i) {
+			PicChunk &chunk = chunks[i];
+
+			auto size = chunk.size;
+			unsigned char *buffer = new unsigned char[size];
+			auto chunkStride = 4 * ((chunk.width + 3) & 0xfffc);
+			unsigned char *result = new unsigned char[chunk.height * chunkStride];
+
+			br.seekg(entry.offset + chunk.offset);
+			br.read((char *)buffer, size);
+
+			decode(buffer, size, result);
+			dpcm(result, result, chunk.width, chunk.height, chunkStride);
+			for (int y = 0; y < chunk.height; ++y) {
+				/*for (int x = 0; x < chunk.width * 4; ++x) {
+				pic.pixels[chunk.left * 4 + x + (chunk.top + y) * header.width * 4] = result[x + y * chunkStride];
+				}*/
+				memcpy(&pic.pixels[chunk.left * 4 + (chunk.top + y) * header.width * 4], result + y * chunkStride, chunkStride);
+			}
+			delete[] buffer;
+			delete[] result;
+		}
 	}
+	
 
 	return pic;
 }
@@ -531,7 +682,9 @@ void Archive::extractMsk(const std::string &path) {
 }
 
 void Archive::extractPic(ArchiveEntry &entry) {
-	BinaryReader br(ifs_);
+	auto pic = getPic(entry.path);
+	writeImage(entry.name + "_test.png", pic.pixels.data(), pic.width, pic.height, 4 * pic.width);
+	/*BinaryReader br(ifs_);
 	br.seekg(entry.offset);
 
 	auto header = br.read<PicHeader>();
@@ -559,15 +712,12 @@ void Archive::extractPic(ArchiveEntry &entry) {
 		decode(buffer, size, result);
 		dpcm(result, result, chunk.width, chunk.height, chunkStride);
 		for (int y = 0; y < chunk.height; ++y) {
-			/*for (int x = 0; x < chunk.width * 4; ++x) {
-			pic.pixels[chunk.left * 4 + x + (chunk.top + y) * header.width * 4] = result[x + y * chunkStride];
-			}*/
 			memcpy(&pic.pixels[chunk.left * 4 + (chunk.top + y) * header.width * 4], result + y * chunkStride, chunkStride);
 		}
 		delete[] buffer;
 		delete[] result;
 	}
-	writeImage(pic.name + "_test.png", pic.pixels.data(), header.width, header.height, 4 * header.width);
+	writeImage(pic.name + "_test.png", pic.pixels.data(), header.width, header.height, 4 * header.width);*/
 }
 
 Bup Archive::getBup(const std::string &path) {
@@ -705,6 +855,13 @@ void Archive::scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br
 	std::vector<ArchiveChunk> chunks(count);
 	br.read((char *)chunks.data(), count * sizeof(ArchiveChunk));
 
+	auto firstNameOffset = chunks[0].nameOffset & ~0x80000000;
+	auto firstName = startOffset + firstNameOffset;
+	auto nameSize = chunks[0].size - firstNameOffset;
+	br.seekg(firstName);
+	std::vector<char> nameList(nameSize);
+	br.read(nameList.data(), nameSize);
+
 	current.children.reserve(count);
 	for (uint32_t i = 0; i < count; ++i) {
 		auto &chunk = chunks[i];
@@ -713,29 +870,27 @@ void Archive::scan(uint64_t startOffset, ArchiveEntry &current, BinaryReader &br
 		uint64_t offset = chunk.offset;
 		offset <<= isFolder ? 4 : 11;
 
-		br.seekg(startOffset + chunk.nameOffset);
-		auto name = br.readString();
+		//br.seekg(startOffset + chunk.nameOffset);
+		//auto name = br.readString();
+		auto name = std::string(nameList.data() + chunk.nameOffset - chunks[0].nameOffset);
 
 		if (name == "." || name == "..")
 			continue;
 
+		auto &entry = current.children.emplace_back();
+		entry.parent = &current;
+		entry.name = std::move(name);
+		current.childrenNames.insert({ entry.name, current.children.size() - 1 });
+
 		if (isFolder) {
-			std::cout << "Reading folder '" << name << "' (parent = '" << current.name << "')...\n";
-			auto &entry = current.children.emplace_back();
-			entry.parent = &current;
+			std::cout << "Reading folder '" << entry.name << "' (parent = '" << current.name << "')...\n";
 			entry.isFolder = true;
-			entry.name = std::move(name);
 			entry.path = current.path + entry.name + "/";
-			current.childrenNames.insert({ entry.name, current.children.size() - 1 });
 			scan(offset, entry, br);
 		} else {
-			auto &entry = current.children.emplace_back();
-			entry.parent = &current;
 			entry.offset = offset;
 			entry.size = chunk.size;
-			entry.name = std::move(name);
 			entry.path = current.path + entry.name;
-			current.childrenNames.insert({ entry.name, current.children.size() - 1 });
 		}
 	}
 }

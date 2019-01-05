@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <functional>
 #include <memory>
 
@@ -44,6 +45,7 @@ private:
 
 	SoundIoOutStream *outStream;
 	std::shared_ptr<AT3File> at3_;
+	std::atomic_bool inCallback_ = false, loadingStream_ = false;
 
 	uint32_t remaining_ = 0, startAt_ = 0;
 

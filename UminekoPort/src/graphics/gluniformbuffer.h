@@ -18,7 +18,7 @@ public:
 		friend GLUniformBuffer;
 	};
 
-	static void createUniformBuffer(const std::string &name, uint32_t bindingPoint, void *data, size_t size);
+	static UniformBlockInfo * createUniformBuffer(const std::string &name, uint32_t bindingPoint, void *data, size_t size);
 	static void *uniformBuffer(const std::string &name);
 	static UniformBlockInfo *uniformBlock(const std::string &name);
 	static void updateUniformBuffer(const std::string &name);

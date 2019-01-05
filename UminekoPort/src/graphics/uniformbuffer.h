@@ -34,11 +34,11 @@ private:
 class UniformBuffer {
 public:
 	template <typename U>
-	static void createUniformBuffer(const std::string &name, uint32_t bindingPoint) {
+	static UniformBufferWrapper<U> createUniformBuffer(const std::string &name, uint32_t bindingPoint) {
 		std::cout << "Creating buffer data... ";
 		U *data = new U();
 		std::cout << "Done." << std::endl;
-		createUniformBufferHelper(name, bindingPoint, data, sizeof(U));
+		return createUniformBufferHelper<U>(name, bindingPoint, data, sizeof(U));
 	}
 
 	template <typename U>
@@ -55,10 +55,11 @@ public:
 		bindUniformBufferHelper(name);
 	}
 private:
-	static void createUniformBufferHelper(const std::string &name, uint32_t bindingPoint, void *data, size_t size) {
+	template <typename U>
+	static UniformBufferWrapper<U> createUniformBufferHelper(const std::string &name, uint32_t bindingPoint, void *data, size_t size) {
 		//if (Config::graphicsAPI() == GraphicsAPI::OpenGL) {
 		std::cout << "First: " << *((static_cast<float *>(data)) + 0) << std::endl;
-		GLUniformBuffer::createUniformBuffer(name, bindingPoint, data, size);
+		return UniformBufferWrapper<U>(GLUniformBuffer::createUniformBuffer(name, bindingPoint, data, size));
 		//} else if (Config::graphicsAPI() == GraphicsAPI::Vulkan) {
 		// TODO...
 		//}

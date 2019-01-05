@@ -34,6 +34,10 @@ private:
 	const Glyph &initGlyph(uint32_t index);
 	static std::unique_ptr<Font> global_;
 
+	enum class FontVersion {
+		Fnt3, Fnt4
+	} version_;
+
 	std::vector<uint32_t> offsets_;
 	std::vector<unsigned char> data_;
 	std::vector<Glyph> glyphs_;

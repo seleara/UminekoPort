@@ -28,7 +28,11 @@ void Font::load(const std::string &filename, Archive &archive) {
 	BinaryReader br((const char *)data_.data(), data_.size());
 	
 	auto magic = br.readString(4);
-	if ((magic != "FNT3") && (magic != "FNT4")) {
+	if (magic == "FNT3") {
+		version_ = FontVersion::Fnt3;
+	} else if (magic == "FNT4") {
+		version_ = FontVersion::Fnt4;
+	} else {
 		throw std::runtime_error("File is not a valid font file.");
 	}
 
@@ -97,7 +101,11 @@ const Glyph &Font::initGlyph(uint32_t index) {
 		};
 
 		auto modWidth = (glyph.width % 2 == 0) ? glyph.width : (glyph.width + 1);
-		auto literals = DataCompression::decompress10_6(readPtr, glyph.compressedSize, modWidth * glyph.height / 2);
+		std::vector<unsigned char> literals;
+		if (version_ == FontVersion::Fnt4)
+			literals = DataCompression::decompress12_4(readPtr, glyph.compressedSize, modWidth * glyph.height / 2);
+		else
+			literals = DataCompression::decompress10_6(readPtr, glyph.compressedSize, modWidth * glyph.height / 2);
 
 		int nibbleCount = 0;
 		int literalIndex = 0;

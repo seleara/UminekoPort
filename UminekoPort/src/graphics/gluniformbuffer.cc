@@ -7,7 +7,7 @@ GLUniformBuffer::UniformBlockInfo::~UniformBlockInfo() {
 		delete[] data;
 }
 
-void GLUniformBuffer::createUniformBuffer(const std::string &name, uint32_t bindingPoint, void *data, size_t size) {
+GLUniformBuffer::UniformBlockInfo *GLUniformBuffer::createUniformBuffer(const std::string &name, uint32_t bindingPoint, void *data, size_t size) {
 	std::cout << "First: " << *((static_cast<float *>(data)) + 0) << std::endl;
 	std::cout << "UBO size: " << size << std::endl;
 	blocks_[name] = UniformBlockInfo { bindingPoint, 0, size, nullptr };
@@ -26,6 +26,7 @@ void GLUniformBuffer::createUniformBuffer(const std::string &name, uint32_t bind
 		}
 		std::cout << "\n";
 	}
+	return &block;
 }
 
 void *GLUniformBuffer::uniformBuffer(const std::string &name) {

@@ -58,6 +58,7 @@ private:
 		return bufSize;
 	}
 
+	std::string filename_;
 	unsigned char *avData_;
 	uint32_t dataOffset_ = 0, dataRemaining_ = 0;
 
